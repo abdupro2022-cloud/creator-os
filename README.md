@@ -296,8 +296,8 @@ When using convex, make sure:
 
 # ABDO CREATOR OS — version 1
 
-A personal AI operating system for one solo YouTube creator. Version 1 ships exactly one slice
-end to end: **IDEA → ANGLE → SCRIPT**, plus the workspace around it.
+A personal AI operating system for one solo YouTube creator. Version 1 ships one slice end to end:
+**IDEA → ANGLE → SCRIPT → PUBLISH KIT**, plus the workspace around it.
 
 ## What actually works
 
@@ -309,23 +309,26 @@ end to end: **IDEA → ANGLE → SCRIPT**, plus the workspace around it.
 | Write | Drafting agent | One model call per section, written straight to the database, so Script Studio fills in progressively. A failed section is marked failed and the rest continue. |
 | Verify | Script Studio | `script.qa_scan` (deterministic: empty sections, prohibited style, filler openers, repeated lines, unsourced evidence claims) + a model review pass. Both sets of findings are stored on the script. |
 | Revise | Script Studio | Section editing with debounced autosave, per-section AI rewrite, reordering, add/remove, snapshots and restore, live word count and duration estimate. |
+| Package | Publish Kit | `publish.chapter_plan` derives chapter markers **arithmetically** from the real per-section durations, then one model call writes title options, the description, tags, a pinned comment, a thumbnail brief and the Shorts cuts. `publish.metadata_check` then measures every field against YouTube's real limits and records what needs fixing. |
+| Choose | Publish Kit | The chosen title is stored on the pack, and description / chapters / tags / Shorts copy are one click each. |
 
 The **first screen** (Command Center) shows the pipeline with real counts, an inline capture box, ideas
 in progress, recent drafts with progress, style-profile completeness and the real agent run log.
 
 ## Not built (and not stubbed)
 
-Research/sources, YouTube + competitor analysis, Shorts, SEO, publishing, files/PDFs, long-term memory,
-chat threads, background tasks. No placeholder buttons, no fake data, no mock dashboards anywhere —
-the landing page lists these as not built.
+Research/sources, YouTube + competitor analysis, files/PDFs, long-term memory, chat threads and
+background tasks. Uploading is deliberately out of scope: the publish kit produces the copy and the
+chapter list, and it never connects to a channel. No placeholder buttons, no fake data, no mock
+dashboards anywhere — the landing page lists what is missing.
 
 ## Architecture
 
 ```
 Frontend (Vite + React + Tailwind)
   → Convex API (queries / mutations / actions)
-    → Agent core      src/convex/agent/{step,ideas,scripts}.ts
-      → Tool registry  src/lib/tools/registry.ts        (3 real, deterministic tools)
+    → Agent core      src/convex/agent/{step,ideas,scripts,publish}.ts
+      → Tool registry  src/lib/tools/registry.ts        (5 real, deterministic tools)
       → AI providers   src/convex/ai/exec.ts            ("use node" — the only vendor call site)
         → Router       src/lib/ai/router.ts             (capability + strength routing)
         → Catalog      src/lib/ai/models.ts             (gateway-verified ids and strengths)
@@ -333,8 +336,8 @@ Frontend (Vite + React + Tailwind)
 ```
 
 Data model: `projects`, `creatorProfiles`, `ideas`, `scripts`, `scriptSections`, `scriptRevisions`,
-`aiRuns`, `settings` (+ the Convex Auth tables). Every idea, script and run carries a `projectId`,
-which is what keeps project contexts from mixing.
+`publishPacks`, `aiRuns`, `settings` (+ the Convex Auth tables). Every idea, script, pack and run
+carries a `projectId`, which is what keeps project contexts from mixing.
 
 Only `src/convex/ai/exec.ts` touches the provider SDK, and it runs in the Convex Node runtime, so
 `VLY_INTEGRATION_KEY` never reaches the browser. The frontend only ever sends a model id.
@@ -351,8 +354,12 @@ tags with an explicit instruction never to follow instructions found inside it.
 - **Permissions.** Every tool declares READ / LOW_RISK_WRITE / EXTERNAL_ACTION / DESTRUCTIVE; the
 registry rejects anything that needs confirmation the caller did not provide. No external-action tool
 is registered yet.
-- **No silent failure.** A failed run is written to `aiRuns` with the error, and the idea or script is
-marked failed and retryable rather than left looking successful.
+- **Numbers are computed, never guessed.** Chapter timestamps are arithmetic on the real section
+duration estimates and the metadata check measures the text against YouTube's actual field limits
+(100-character titles, 500-character tag totals, a 5 000-character description). The model is only
+ever asked for copy, and it is explicitly forbidden from writing a chapter list or inventing a link.
+- **No silent failure.** A failed run is written to `aiRuns` with the error, and the idea, script or
+publish kit is marked failed and retryable rather than left looking successful.
 
 ## Model routing
 
@@ -381,5 +388,8 @@ mutation the agent calls was exercised against the real database before shipping
 the gateway does not publish capability descriptors, so they are labelled as hints, not verified facts.
 - Section writing returns plain text rather than JSON on purpose — a long paragraph inside a JSON
 string can be truncated or mis-escaped and silently corrupt a draft.
-- Verification is advisory. It never edits a draft or blocks publishing.
-- Uploading/publishing to YouTube is deliberately out of scope for version 1.
+- Verification and the metadata check are advisory. Neither edits a draft nor blocks anything.
+- Nothing uploads to YouTube: there is no channel connection and no OAuth in version 1. The kit is
+copy plus a chapter list the creator pastes in themselves.
+- Shorts are a cut *plan* — a title, the spoken hook, the ordered beats it follows and the section it
+comes from. Nothing is clipped or rendered.

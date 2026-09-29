@@ -5,10 +5,14 @@
  * Credentials never live here: the backend only receives a model id and resolves
  * it through the platform AI gateway, so keys never reach the client.
  *
- * Every id below was called successfully through this deployment's gateway
- * (see `ai/exec:listModels` for the live inventory, 390 models). Two things to
- * keep straight:
- *   - `verified` means "this id really answered a completion request".
+ * Every id below was called through this deployment's gateway (see
+ * `ai/exec:listModels` for the live inventory, 390 models). Two things to keep
+ * straight:
+ *   - `verified` means "this id really answered a completion request here".
+ *     It is not permanent: a provider can start failing behind the same id, and
+ *     the gpt-5.4 family did exactly that. Anything marked `verified: false` is
+ *     excluded from routing so a dead id can never be chosen or used as the
+ *     fallback.
  *   - `strengths` is this product's curated routing policy, not provider
  *     metadata. The gateway does not publish capability descriptors.
  */
@@ -87,31 +91,41 @@ function caps(
   };
 }
 
-/** Fallback used when a pinned or custom model cannot answer. */
-export const DEFAULT_MODEL_ID = "openai/gpt-5.4-mini";
+/**
+ * Fallback used when a pinned or custom model cannot answer.
+ *
+ * This must be an id that is known to work right now: it is the last link in
+ * every routing chain, so a dead id here turns a recoverable provider hiccup
+ * into a hard failure. It was `openai/gpt-5.4-mini` until that family stopped
+ * answering (see the note on it below).
+ */
+export const DEFAULT_MODEL_ID = "anthropic/claude-haiku-4.5";
+
+const GPT_54_NOTE =
+  'Broken through this gateway: every request (including a trivial prompt) fails with "Invalid JSON response". Kept in the catalog only so the failure is visible in Settings — never routed to.';
 
 export const MODELS: AIModel[] = [
   {
     id: "openai/gpt-5.4",
     label: "GPT-5.4",
     provider: "openai",
-    capabilities: caps(200_000, { reasoning: true, vision: true }),
+    capabilities: caps(200_000, { reasoning: true, vision: true, structuredOutput: false }),
     strengths: ["reasoning"],
     costTier: 3,
     speedTier: 2,
-    verified: true,
-    notes: "Deepest reasoning available; slowest and priciest.",
+    verified: false,
+    notes: GPT_54_NOTE,
   },
   {
     id: "openai/gpt-5.4-mini",
     label: "GPT-5.4 mini",
     provider: "openai",
-    capabilities: caps(200_000, { reasoning: true, vision: true }),
+    capabilities: caps(200_000, { reasoning: true, vision: true, structuredOutput: false }),
     strengths: ["reasoning", "cost", "speed"],
     costTier: 2,
     speedTier: 3,
-    verified: true,
-    notes: "Reliable middle ground, and the routing fallback.",
+    verified: false,
+    notes: GPT_54_NOTE,
   },
   {
     id: "openai/gpt-4o-mini",

@@ -475,19 +475,16 @@ function chapterLabel(heading: string): string {
  * numbers were chosen by a model. Sections shorter than the minimum chapter
  * length are folded into the chapter that precedes them.
  */
-export function planChapters(
-  input: z.infer<typeof chapterPlanInput>,
-): ChapterPlan {
-  const requested = input.minChapterSeconds ?? CHAPTER_CEILING_SECONDS;
-  const threshold = Math.min(
-    CHAPTER_CEILING_SECONDS,
-    Math.max(CHAPTER_FLOOR_SECONDS, requested),
-  );
-  const issues: ChapterPlan["issues"] = [];
+type PlanSection = z.infer<typeof chapterPlanInput>["sections"][number];
+
+function derive(
+  sections: PlanSection[],
+  threshold: number,
+): { chapters: ChapterPlan["chapters"]; elapsed: number } {
   const chapters: ChapterPlan["chapters"] = [];
   let elapsed = 0;
 
-  for (const section of input.sections) {
+  for (const section of sections) {
     if (chapters.length === 0) {
       // The first marker is always 0:00, otherwise YouTube discards the list.
       chapters.push({
@@ -503,6 +500,42 @@ export function planChapters(
       });
     }
     elapsed += Math.max(0, section.estSeconds);
+  }
+
+  return { chapters, elapsed };
+}
+
+export function planChapters(
+  input: z.infer<typeof chapterPlanInput>,
+): ChapterPlan {
+  const requested = input.minChapterSeconds ?? CHAPTER_CEILING_SECONDS;
+  const threshold = Math.min(
+    CHAPTER_CEILING_SECONDS,
+    Math.max(CHAPTER_FLOOR_SECONDS, requested),
+  );
+  const issues: ChapterPlan["issues"] = [];
+
+  let { chapters, elapsed } = derive(input.sections, threshold);
+
+  // YouTube only shows a chapter list from three markers onward. Rather than
+  // return a list that will simply be ignored, relax the minimum — but never
+  // below the 10 seconds YouTube itself requires — so the markers stay useful.
+  if (
+    input.sections.length > 0 &&
+    chapters.length > 1 &&
+    chapters.length < 3 &&
+    threshold > CHAPTER_FLOOR_SECONDS
+  ) {
+    const relaxed = derive(input.sections, CHAPTER_FLOOR_SECONDS);
+    if (relaxed.chapters.length > chapters.length) {
+      chapters = relaxed.chapters;
+      elapsed = relaxed.elapsed;
+      issues.push({
+        severity: "info",
+        kind: "chapters_relaxed",
+        message: `Lowered the chapter minimum to ${CHAPTER_FLOOR_SECONDS}s so the list reaches the three markers YouTube needs.`,
+      });
+    }
   }
 
   if (input.sections.length === 0) {
