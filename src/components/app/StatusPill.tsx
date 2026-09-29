@@ -98,6 +98,24 @@ export function sectionStatusMeta(status: string): {
   }
 }
 
+export function publishStatusMeta(status: string): {
+  label: string;
+  tone: PillTone;
+} {
+  switch (status) {
+    case "idle":
+      return { label: "Not generated", tone: "neutral" };
+    case "generating":
+      return { label: "Generating", tone: "info" };
+    case "ready":
+      return { label: "Ready to publish", tone: "success" };
+    case "failed":
+      return { label: "Failed", tone: "danger" };
+    default:
+      return { label: status, tone: "neutral" };
+  }
+}
+
 export function runStatusMeta(status: string): {
   label: string;
   tone: PillTone;
@@ -155,6 +173,8 @@ export function runKindLabel(kind: string): string {
       return "Section writing";
     case "script_verification":
       return "Verification";
+    case "publish_pack":
+      return "Publish kit";
     default:
       return kind;
   }

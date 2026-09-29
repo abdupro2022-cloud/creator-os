@@ -129,7 +129,7 @@ export const generate = action({
       projectId: loaded.script.projectId,
       kind: "publish_pack",
       taskType: "publish_pack",
-      targetId: args.scriptId,
+      targetId: packId,
     });
 
     await ctx.runMutation(internal.runs.step, {
@@ -174,7 +174,7 @@ export const generate = action({
         latencyMs: planResult.durationMs,
         candidates: [],
         errorMessage: error,
-        targetId: args.scriptId,
+        targetId: packId,
       });
       return { ok: false as const, error };
     }
@@ -258,7 +258,7 @@ export const generate = action({
         latencyMs: result.latencyMs,
         candidates: result.candidates,
         errorMessage: error,
-        targetId: args.scriptId,
+        targetId: packId,
       });
       return { ok: false as const, error };
     }
@@ -287,7 +287,7 @@ export const generate = action({
         latencyMs: result.latencyMs,
         candidates: result.candidates,
         errorMessage: error,
-        targetId: args.scriptId,
+        targetId: packId,
       });
       return { ok: false as const, error };
     }
@@ -327,7 +327,7 @@ export const generate = action({
         latencyMs: result.latencyMs,
         candidates: result.candidates,
         errorMessage: error,
-        targetId: args.scriptId,
+        targetId: packId,
       });
       return { ok: false as const, error };
     }
@@ -406,7 +406,7 @@ export const generate = action({
       completionTokens: result.completionTokens,
       latencyMs: result.latencyMs,
       candidates: result.candidates,
-      targetId: args.scriptId,
+      targetId: packId,
     });
 
     return {

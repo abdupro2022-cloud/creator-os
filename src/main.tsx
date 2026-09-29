@@ -18,6 +18,7 @@ const CommandCenter = lazy(() => import("./pages/Dashboard.tsx"));
 const Ideas = lazy(() => import("./pages/Ideas.tsx"));
 const Scripts = lazy(() => import("./pages/Scripts.tsx"));
 const ScriptStudio = lazy(() => import("./pages/ScriptStudio.tsx"));
+const PublishKit = lazy(() => import("./pages/PublishKit.tsx"));
 const Projects = lazy(() => import("./pages/Projects.tsx"));
 const StyleProfile = lazy(() => import("./pages/StyleProfile.tsx"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage.tsx"));
@@ -151,6 +152,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="ideas" element={<Ideas />} />
                 <Route path="scripts" element={<Scripts />} />
                 <Route path="scripts/:scriptId" element={<ScriptStudio />} />
+                <Route
+                  path="scripts/:scriptId/publish"
+                  element={<PublishKit />}
+                />
                 <Route path="projects" element={<Projects />} />
                 <Route path="style" element={<StyleProfile />} />
                 <Route path="settings" element={<SettingsPage />} />

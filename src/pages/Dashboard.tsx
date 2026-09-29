@@ -121,6 +121,7 @@ export default function Dashboard() {
               developed: overview.pipeline.developed,
               capturing: overview.pipeline.captured,
               scripts: overview.pipeline.scripts,
+              kits: overview.pipeline.kits,
             }}
             projects={overview.projects.map((project) => ({
               _id: project._id,

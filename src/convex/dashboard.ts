@@ -12,7 +12,7 @@ export const overview = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const [projects, ideas, scripts, runs, profileDoc] = await Promise.all([
+    const [projects, ideas, scripts, packs, runs, profileDoc] = await Promise.all([
       ctx.db
         .query("projects")
         .withIndex("by_owner", (q) => q.eq("ownerId", userId))
@@ -25,6 +25,11 @@ export const overview = query({
         .take(60),
       ctx.db
         .query("scripts")
+        .withIndex("by_owner_updated", (q) => q.eq("ownerId", userId))
+        .order("desc")
+        .take(60),
+      ctx.db
+        .query("publishPacks")
         .withIndex("by_owner_updated", (q) => q.eq("ownerId", userId))
         .order("desc")
         .take(60),
@@ -117,6 +122,10 @@ export const overview = query({
         drafts: scriptStatus("draft"),
         verified: scriptStatus("verified"),
         failedScripts: scriptStatus("failed"),
+        /** One publish kit covers Shorts, SEO and publish at once. */
+        kits: packs.length,
+        kitsReady: packs.filter((pack) => pack.status === "ready").length,
+        kitsFailed: packs.filter((pack) => pack.status === "failed").length,
       },
       recentIdeas,
       recentScripts,

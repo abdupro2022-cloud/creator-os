@@ -42,6 +42,9 @@ const NAV: NavItem[] = [
 ];
 
 function currentTitle(pathname: string): string {
+  if (/^\/dashboard\/scripts\/[^/]+\/publish$/.test(pathname)) {
+    return "Publish Kit";
+  }
   if (pathname.startsWith("/dashboard/scripts/")) return "Script Studio";
   const match = NAV.find((item) =>
     item.end ? pathname === item.to : pathname.startsWith(item.to),
@@ -177,8 +180,8 @@ export function AppShell() {
               Live pipeline
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-              Idea → Angle → Script is fully wired. Research, Shorts, SEO and
-              Publish are not built yet.
+              Idea → Angle → Script → Publish Kit is wired end to end. Research
+              is not built, and nothing is ever uploaded to YouTube.
             </p>
           </div>
         </div>

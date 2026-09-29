@@ -34,6 +34,7 @@ import {
   History,
   Loader2,
   Plus,
+  Rocket,
   RotateCcw,
   ShieldCheck,
   Trash2,
@@ -321,6 +322,19 @@ export default function ScriptStudio() {
               {pending.length === sections.length
                 ? "Draft sections"
                 : `Draft ${pending.length} missing`}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              disabled={sections.filter((s) => s.status === "written").length === 0}
+              asChild
+            >
+              <Link to={`/dashboard/scripts/${script._id}/publish`}>
+                <Rocket className="size-4" />
+                Publish kit
+              </Link>
             </Button>
           </div>
         </div>

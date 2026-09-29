@@ -16,15 +16,18 @@ import { Link } from "react-router";
  *
  * Stages that exist show real counts from the database. Stages that are not
  * built are marked plainly, so nothing on this screen overstates the product.
+ *
+ * Shorts, SEO and Publish are all served by one publish kit per script, so they
+ * carry the same count and say what they actually produce instead.
  */
 const STAGES = [
   { id: "idea", label: "Idea", icon: Lightbulb, live: true },
   { id: "research", label: "Research", icon: Search, live: false },
   { id: "angle", label: "Angle", icon: Compass, live: true },
   { id: "script", label: "Script", icon: PenLine, live: true },
-  { id: "shorts", label: "Shorts", icon: Film, live: false },
-  { id: "seo", label: "SEO", icon: TrendingUp, live: false },
-  { id: "publish", label: "Publish", icon: Rocket, live: false },
+  { id: "shorts", label: "Shorts", icon: Film, live: true, note: "Cut plan" },
+  { id: "seo", label: "SEO", icon: TrendingUp, live: true, note: "Metadata kit" },
+  { id: "publish", label: "Publish", icon: Rocket, live: true, note: "No upload" },
 ] as const;
 
 export interface PipelineCounts {
@@ -32,6 +35,8 @@ export interface PipelineCounts {
   developed: number;
   capturing?: number;
   scripts: number;
+  /** Publish kits — one covers Shorts, SEO and publish together. */
+  kits?: number;
 }
 
 export function PipelineMap({
@@ -47,6 +52,9 @@ export function PipelineMap({
     if (id === "idea") return counts.ideas;
     if (id === "angle") return counts.developed;
     if (id === "script") return counts.scripts;
+    if (id === "shorts" || id === "seo" || id === "publish") {
+      return counts.kits ?? 0;
+    }
     return null;
   };
 
@@ -57,7 +65,7 @@ export function PipelineMap({
           Creator pipeline
         </h2>
         <p className="text-[11px] text-muted-foreground">
-          Version 1 covers idea → angle → script end to end.
+          Idea → angle → script → publish kit, end to end. Research is not built.
         </p>
       </div>
 
@@ -101,7 +109,7 @@ export function PipelineMap({
                   {stage.live ? (value ?? 0) : "—"}
                 </span>
                 <span className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                  {stage.live ? "Live" : "Not built"}
+                  {stage.live ? ("note" in stage ? stage.note : "Live") : "Not built"}
                 </span>
               </div>
               {index < STAGES.length - 1 ? (
