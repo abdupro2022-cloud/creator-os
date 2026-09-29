@@ -17,18 +17,20 @@ export const roleValidator = v.union(
 export type Role = Infer<typeof roleValidator>;
 
 /**
- * The creator pipeline. Only `idea` and `script` are implemented in version 1;
- * the remaining stages are declared here so the UI can show honest progress
- * instead of inventing features that do not exist yet.
+ * The creator pipeline.
+ *
+ * `live` marks a stage that really produces something today. `note` states the
+ * exact boundary — Shorts and SEO are generated plans, and Publish builds the
+ * kit but never uploads anywhere. Research is still not built.
  */
 export const PIPELINE_STAGES = [
   { id: "idea", label: "Idea", live: true },
-  { id: "research", label: "Research", live: false },
+  { id: "research", label: "Research", live: false, note: "Not built" },
   { id: "angle", label: "Angle", live: true },
   { id: "script", label: "Script", live: true },
-  { id: "shorts", label: "Shorts", live: false },
-  { id: "seo", label: "SEO", live: false },
-  { id: "publish", label: "Publish", live: false },
+  { id: "shorts", label: "Shorts", live: true, note: "Cut plan" },
+  { id: "seo", label: "SEO", live: true, note: "Metadata kit" },
+  { id: "publish", label: "Publish", live: true, note: "No upload" },
 ] as const;
 
 export const ideaStatusValidator = v.union(
@@ -143,8 +145,52 @@ export const runKindValidator = v.union(
   v.literal("script_outline"),
   v.literal("script_section"),
   v.literal("script_verification"),
+  v.literal("publish_pack"),
 );
 export type RunKind = Infer<typeof runKindValidator>;
+
+/* --------------------------- publish kit --------------------------- */
+
+export const publishStatusValidator = v.union(
+  v.literal("idle"),
+  v.literal("generating"),
+  v.literal("ready"),
+  v.literal("failed"),
+);
+export type PublishStatus = Infer<typeof publishStatusValidator>;
+
+/** A title option with the reason it should earn the click. */
+export const titleOptionValidator = v.object({
+  text: v.string(),
+  rationale: v.string(),
+});
+export type TitleOption = Infer<typeof titleOptionValidator>;
+
+export const thumbnailBriefValidator = v.object({
+  overlayText: v.string(),
+  subject: v.string(),
+  composition: v.string(),
+});
+export type ThumbnailBrief = Infer<typeof thumbnailBriefValidator>;
+
+/**
+ * Chapter markers are derived from the real per-section duration estimates,
+ * never from the model, so the timestamps always match the draft.
+ */
+export const chapterValidator = v.object({
+  atSeconds: v.number(),
+  label: v.string(),
+});
+export type Chapter = Infer<typeof chapterValidator>;
+
+export const shortCutValidator = v.object({
+  title: v.string(),
+  hook: v.string(),
+  beats: v.array(v.string()),
+  /** Heading of the script section the cut is taken from, when one matches. */
+  sourceHeading: v.optional(v.string()),
+});
+export type ShortCut = Infer<typeof shortCutValidator>;
 
 export const verificationValidator = v.object({
   summary: v.string(),
@@ -305,6 +351,36 @@ const schema = defineSchema(
     })
       .index("by_owner_created", ["ownerId", "createdAt"])
       .index("by_target", ["ownerId", "targetId", "createdAt"]),
+
+    /**
+     * The publish kit for one script: what goes in the title, description, tags,
+     * chapters and thumbnail, plus the Shorts cuts worth pulling out of it.
+     * Nothing here is uploaded anywhere — it is copy the creator takes to YouTube.
+     */
+    publishPacks: defineTable({
+      ownerId: v.id("users"),
+      scriptId: v.id("scripts"),
+      projectId: v.id("projects"),
+      status: publishStatusValidator,
+      titles: v.array(titleOptionValidator),
+      chosenTitleIndex: v.optional(v.number()),
+      description: v.string(),
+      tags: v.array(v.string()),
+      chapters: v.array(chapterValidator),
+      pinnedComment: v.string(),
+      thumbnail: v.optional(thumbnailBriefValidator),
+      shorts: v.array(shortCutValidator),
+      /** Findings from the deterministic checks, not model opinions. */
+      titleIssues: v.array(v.string()),
+      metadataIssues: v.array(v.string()),
+      model: v.optional(v.string()),
+      lastRunId: v.optional(v.id("aiRuns")),
+      errorMessage: v.optional(v.string()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_script", ["scriptId"])
+      .index("by_owner_updated", ["ownerId", "updatedAt"]),
 
     settings: defineTable({
       ownerId: v.id("users"),
