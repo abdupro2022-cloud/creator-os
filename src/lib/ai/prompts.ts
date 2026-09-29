@@ -177,6 +177,76 @@ ${context}`;
   ];
 }
 
+export function buildPublishMessages(input: {
+  title: string;
+  angle: string;
+  hook: string;
+  wordCount: number;
+  estSeconds: number;
+  targetDurationSec: number;
+  format: "long_form" | "short" | "both";
+  sections: { heading: string; role: string; words: number; excerpt: string }[];
+  chapterLabels: string[];
+  deterministicFindings: string[];
+  profile?: StyleProfileInput | null;
+}): ChatMessage[] {
+  const system = `${SYSTEM_GUARD}\n\n${styleBlock(input.profile)}
+
+You are preparing the publish kit for a finished video: how it is titled, described, tagged and cut into Shorts. Respond with JSON matching exactly this shape:
+{"titles":[{"text":string,"rationale":string}] (3-5 options),
+ "description":string,
+ "tags":string[],
+ "pinnedComment":string,
+ "thumbnail":{"overlayText":string,"subject":string,"composition":string},
+ "shorts":[{"title":string,"hook":string,"beats":string[],"sourceHeading":string}] (2-4 cuts)}
+
+Rules for each field:
+- titles: each one is a real, specific promise, at most 70 characters, in the creator's language. No clickbait that the script cannot pay off, no ALL CAPS, no more than three hashtags. The rationale is one short sentence about who it appeals to.
+- description: plain text, ready to paste. Open with two lines that make sense without context, then a few short paragraphs in the creator's voice. Never write timestamps or a chapter list — those are added automatically from the real edit, and inventing them would put wrong numbers in front of viewers. Never add links, affiliate codes or statistics you were not given.
+- tags: single keywords or short phrases, no leading #, no duplicates.
+- pinnedComment: one comment the creator can pin to start the conversation.
+- thumbnail.overlayText: at most 4 words, readable at a glance. subject and composition are directions for a human designer.
+- shorts: vertical cuts worth pulling out of THIS script. hook is the spoken opening line, beats are the 2-5 consecutive moments the cut follows, and sourceHeading must be copied exactly from the section headings you were given — copy it character for character so the cut can be traced back to the draft.
+
+Never invent facts, numbers, links or names. If the script only establishes something as unverified, keep it unverified here too.`;
+
+  const sections = input.sections
+    .map(
+      (section) =>
+        `- [${sectionRoleLabel(section.role)}, ${section.words} words] ${section.heading}\n  ${section.excerpt}`,
+    )
+    .join("\n");
+
+  const findings =
+    input.deterministicFindings.length > 0
+      ? input.deterministicFindings.map((f) => `- ${f}`).join("\n")
+      : "- none";
+
+  const user = `Video title (working): ${input.title}
+Angle: ${input.angle}
+Opening hook: ${input.hook}
+Length: ${input.wordCount} words, about ${Math.round(
+    input.estSeconds / 60,
+  )} minute(s) of narration (target ${Math.round(input.targetDurationSec / 60)}).
+Intended format: ${input.format}
+
+Chapter markers already derived from the real section timings (do not repeat these in the description):
+${untrusted("chapter labels", input.chapterLabels.join("\n") || "none")}
+
+Script structure:
+${untrusted("script outline", sections)}
+
+Outstanding warnings from the script check — your copy must not make any of these worse:
+${untrusted("qa scan", findings)}
+
+Return the publish kit JSON.`;
+
+  return [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+}
+
 export function buildVerificationMessages(input: {
   title: string;
   sections: { heading: string; role: string; body: string; words: number }[];

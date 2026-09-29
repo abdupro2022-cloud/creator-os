@@ -60,6 +60,7 @@ const taskTypeValidator = v.union(
   v.literal("script_outline"),
   v.literal("script_writing"),
   v.literal("verification"),
+  v.literal("publish_pack"),
 );
 
 const preferenceValidator = v.union(

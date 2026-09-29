@@ -20,7 +20,8 @@ export type TaskType =
   | "idea_development"
   | "script_outline"
   | "script_writing"
-  | "verification";
+  | "verification"
+  | "publish_pack";
 
 export type RoutingPreference = "balanced" | "quality" | "speed";
 
@@ -50,6 +51,11 @@ export const TASK_PROFILES: Record<TaskType, TaskProfile> = {
     label: "Verification",
     required: ["text", "structuredOutput"],
     strengths: ["reasoning"],
+  },
+  publish_pack: {
+    label: "Publish kit",
+    required: ["text", "structuredOutput"],
+    strengths: ["writing", "reasoning"],
   },
 };
 

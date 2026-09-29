@@ -81,6 +81,45 @@ export function parseSectionText(
   return { ok: true, data: { body, notes: notes.length > 0 ? notes : undefined } };
 }
 
+/**
+ * The publish kit as the model may describe it.
+ *
+ * Chapters are deliberately absent: they are derived arithmetically from the
+ * real section durations, so a model never gets to state a timestamp.
+ */
+export const publishPackSchema = z.object({
+  titles: z
+    .array(
+      z.object({
+        text: z.string().min(3),
+        rationale: z.string(),
+      }),
+    )
+    .min(3)
+    .max(6),
+  description: z.string().min(20),
+  tags: z.array(z.string()).default([]),
+  pinnedComment: z.string().default(""),
+  thumbnail: z.object({
+    overlayText: z.string(),
+    subject: z.string(),
+    composition: z.string(),
+  }),
+  shorts: z
+    .array(
+      z.object({
+        title: z.string().min(3),
+        hook: z.string().min(3),
+        beats: z.array(z.string()).default([]),
+        /** Heading of the script section this cut comes from, when one matches. */
+        sourceHeading: z.string().optional(),
+      }),
+    )
+    .min(1)
+    .max(6),
+});
+export type PublishPack = z.infer<typeof publishPackSchema>;
+
 export const verificationSchema = z.object({
   summary: z.string(),
   score: z.number().min(0).max(100),

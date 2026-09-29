@@ -427,6 +427,292 @@ export function qaScan(input: z.infer<typeof qaScanInput>): QaScan {
 }
 
 /* ------------------------------------------------------------------ */
+/* 4. publish.chapter_plan                                             */
+/* ------------------------------------------------------------------ */
+
+const chapterPlanInput = z.object({
+  sections: z.array(
+    z.object({
+      id: z.string(),
+      heading: z.string(),
+      role: z.enum(["hook", "intro", "body", "cta", "outro"]),
+      estSeconds: z.number().min(0),
+    }),
+  ),
+  /** Shortest section that may start a chapter, in seconds. */
+  minChapterSeconds: z.number().optional(),
+});
+
+const chapterPlanOutput = z.object({
+  chapters: z.array(
+    z.object({
+      atSeconds: z.number(),
+      label: z.string(),
+      sectionId: z.string().optional(),
+    }),
+  ),
+  totalSeconds: z.number(),
+  issues: z.array(outlineIssueSchema),
+});
+
+export type ChapterPlan = z.infer<typeof chapterPlanOutput>;
+
+/** YouTube ignores a chapter list whose first marker is not at 00:00. */
+const CHAPTER_FLOOR_SECONDS = 10;
+const CHAPTER_CEILING_SECONDS = 20;
+
+function chapterLabel(heading: string): string {
+  const label = heading
+    .replace(/\s+/g, " ")
+    .replace(/[:.\-–—]+$/, "")
+    .trim();
+  return (label || "Chapter").slice(0, 90);
+}
+
+/**
+ * Build chapter markers arithmetically from the real per-section duration
+ * estimates. Timestamps therefore always agree with the draft — none of these
+ * numbers were chosen by a model. Sections shorter than the minimum chapter
+ * length are folded into the chapter that precedes them.
+ */
+export function planChapters(
+  input: z.infer<typeof chapterPlanInput>,
+): ChapterPlan {
+  const requested = input.minChapterSeconds ?? CHAPTER_CEILING_SECONDS;
+  const threshold = Math.min(
+    CHAPTER_CEILING_SECONDS,
+    Math.max(CHAPTER_FLOOR_SECONDS, requested),
+  );
+  const issues: ChapterPlan["issues"] = [];
+  const chapters: ChapterPlan["chapters"] = [];
+  let elapsed = 0;
+
+  for (const section of input.sections) {
+    if (chapters.length === 0) {
+      // The first marker is always 0:00, otherwise YouTube discards the list.
+      chapters.push({
+        atSeconds: 0,
+        label: chapterLabel(section.heading),
+        sectionId: section.id,
+      });
+    } else if (section.role !== "hook" && section.estSeconds >= threshold) {
+      chapters.push({
+        atSeconds: elapsed,
+        label: chapterLabel(section.heading),
+        sectionId: section.id,
+      });
+    }
+    elapsed += Math.max(0, section.estSeconds);
+  }
+
+  if (input.sections.length === 0) {
+    issues.push({
+      severity: "critical",
+      kind: "chapters_incomplete",
+      message:
+        "There are no written sections yet, so no chapter markers could be derived.",
+    });
+  } else if (chapters.length < 3) {
+    issues.push({
+      severity: "warning",
+      kind: "too_few_chapters",
+      message: `Only ${chapters.length} section(s) reach the ${threshold}s minimum. YouTube shows a chapter list from 3 markers onward — lengthen or merge the short sections.`,
+    });
+  }
+
+  if (elapsed > 0 && elapsed < 60) {
+    issues.push({
+      severity: "info",
+      kind: "below_chapter_minimum",
+      message: `The draft runs about ${elapsed}s, which is too short for chapters to help viewers.`,
+    });
+  }
+
+  return { chapters, totalSeconds: elapsed, issues };
+}
+
+/* ------------------------------------------------------------------ */
+/* 5. publish.metadata_check                                           */
+/* ------------------------------------------------------------------ */
+
+/** YouTube's hard title limit. Longer titles cannot be published at all. */
+export const TITLE_HARD_LIMIT = 100;
+/** Where search results and most mobile surfaces truncate a title. */
+export const TITLE_TRUNCATION_LIMIT = 70;
+export const DESCRIPTION_LIMIT = 5000;
+export const TAG_TOTAL_LIMIT = 500;
+
+const metadataCheckInput = z.object({
+  titles: z.array(z.string()),
+  tags: z.array(z.string()).default([]),
+  description: z.string().default(""),
+});
+
+const metadataCheckOutput = z.object({
+  valid: z.boolean(),
+  titles: z.array(
+    z.object({
+      text: z.string(),
+      chars: z.number(),
+      issues: z.array(z.string()),
+    }),
+  ),
+  cleanTags: z.array(z.string()),
+  tagCharacters: z.number(),
+  tagIssues: z.array(z.string()),
+  issues: z.array(outlineIssueSchema),
+});
+
+export type MetadataCheck = z.infer<typeof metadataCheckOutput>;
+
+/**
+ * Share of letters that are upper case — a cheap shouting detector. Scripts
+ * without letter case (Arabic, Chinese, …) simply score 0.
+ */
+export function uppercaseRatio(text: string): number {
+  const letters = text.replace(/[^\p{L}]/gu, "");
+  if (letters.length === 0) return 0;
+  return letters.replace(/[^\p{Lu}]/gu, "").length / letters.length;
+}
+
+/**
+ * Check a publish kit against the real YouTube field limits and normalise the
+ * tag list. Everything reported here is a measured fact about the text, not an
+ * opinion about how good the copy is.
+ */
+export function checkMetadata(
+  input: z.infer<typeof metadataCheckInput>,
+): MetadataCheck {
+  const issues: MetadataCheck["issues"] = [];
+
+  const titles = input.titles.map((raw) => {
+    const text = raw.replace(/\s+/g, " ").trim();
+    const found: string[] = [];
+
+    if (text.length < 12) {
+      found.push(
+        "Very short — there is little for a viewer or a search engine to latch onto.",
+      );
+    }
+    if (text.length > TITLE_HARD_LIMIT) {
+      found.push(
+        `YouTube rejects titles past ${TITLE_HARD_LIMIT} characters; this one is ${text.length}.`,
+      );
+    } else if (text.length > TITLE_TRUNCATION_LIMIT) {
+      found.push(
+        `Search and most mobile surfaces truncate around ${TITLE_TRUNCATION_LIMIT} characters.`,
+      );
+    }
+    if (text.length >= 12 && uppercaseRatio(text) > 0.6) {
+      found.push("Almost entirely upper case — this reads as shouting.");
+    }
+    const hashtags = (text.match(/#/g) ?? []).length;
+    if (hashtags > 3) {
+      found.push(`${hashtags} hashtags; YouTube only honours three in a title.`);
+    }
+
+    return { text, chars: text.length, issues: found };
+  });
+
+  if (titles.length === 0) {
+    issues.push({
+      severity: "critical",
+      kind: "no_title",
+      message: "No title options were produced.",
+    });
+  } else if (titles.some((title) => title.chars > TITLE_HARD_LIMIT)) {
+    issues.push({
+      severity: "critical",
+      kind: "title_too_long",
+      message: `At least one title is longer than YouTube's ${TITLE_HARD_LIMIT}-character limit and would be cut off at upload.`,
+    });
+  } else if (titles.every((title) => title.issues.length > 0)) {
+    issues.push({
+      severity: "warning",
+      kind: "titles_need_work",
+      message:
+        "Every title option has at least one problem — pick one and tighten it before publishing.",
+    });
+  }
+
+  const seen = new Set<string>();
+  const cleanTags: string[] = [];
+  const tagIssues: string[] = [];
+  let dropped = 0;
+
+  for (const raw of input.tags) {
+    const tag = raw.replace(/^#+/, "").replace(/\s+/g, " ").trim();
+    if (tag.length === 0) {
+      dropped += 1;
+      continue;
+    }
+    const key = tag.toLowerCase();
+    if (seen.has(key)) {
+      dropped += 1;
+      continue;
+    }
+    seen.add(key);
+    cleanTags.push(tag.slice(0, 60));
+  }
+
+  if (dropped > 0) {
+    tagIssues.push(`${dropped} empty or duplicate tag(s) were removed.`);
+  }
+
+  const tagCharacters = cleanTags.join(",").length;
+  if (tagCharacters > TAG_TOTAL_LIMIT) {
+    tagIssues.push(
+      `Tags total ${tagCharacters} characters; YouTube ignores the rest past ${TAG_TOTAL_LIMIT}. Remove about ${tagCharacters - TAG_TOTAL_LIMIT}.`,
+    );
+    issues.push({
+      severity: "critical",
+      kind: "tags_over_limit",
+      message: `The tag list is ${tagCharacters} characters against a ${TAG_TOTAL_LIMIT} limit.`,
+    });
+  }
+  if (cleanTags.length === 0) {
+    tagIssues.push("No usable tags — YouTube uses these to decide where to place the video.");
+    issues.push({
+      severity: "warning",
+      kind: "no_tags",
+      message: "No usable tags were produced.",
+    });
+  }
+
+  const description = input.description.trim();
+  if (description.length === 0) {
+    issues.push({
+      severity: "warning",
+      kind: "empty_description",
+      message:
+        "The description is empty. The first two lines are the only part most viewers ever read.",
+    });
+  } else if (description.length > DESCRIPTION_LIMIT) {
+    issues.push({
+      severity: "critical",
+      kind: "description_too_long",
+      message: `The description is ${description.length} characters against a ${DESCRIPTION_LIMIT} limit.`,
+    });
+  } else if (description.length < 200) {
+    issues.push({
+      severity: "info",
+      kind: "thin_description",
+      message:
+        "A very short description — use it for your sources, chapters and the next video.",
+    });
+  }
+
+  return {
+    valid: !issues.some((issue) => issue.severity === "critical"),
+    titles,
+    cleanTags,
+    tagCharacters,
+    tagIssues,
+    issues,
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Registry                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -463,6 +749,28 @@ export const TOOLS: ToolDefinition[] = [
     inputSchema: qaScanInput,
     outputSchema: qaScanOutput,
     run: async (input) => qaScan(input as z.infer<typeof qaScanInput>),
+  },
+  {
+    id: "publish.chapter_plan",
+    name: "Chapter planner",
+    description:
+      "Derives YouTube chapter markers from the real per-section duration estimates, so the timestamps always match the draft.",
+    permission: "READ",
+    requiresConfirmation: false,
+    inputSchema: chapterPlanInput,
+    outputSchema: chapterPlanOutput,
+    run: async (input) => planChapters(input as z.infer<typeof chapterPlanInput>),
+  },
+  {
+    id: "publish.metadata_check",
+    name: "Metadata checker",
+    description:
+      "Measures titles, tags and description against YouTube's real field limits and normalises the tag list. Findings are measurements, not opinions.",
+    permission: "READ",
+    requiresConfirmation: false,
+    inputSchema: metadataCheckInput,
+    outputSchema: metadataCheckOutput,
+    run: async (input) => checkMetadata(input as z.infer<typeof metadataCheckInput>),
   },
 ];
 
