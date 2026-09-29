@@ -1,0 +1,175 @@
+/* DO NOT CHANGE */
+@import "tailwindcss";
+@import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
+
+/* DO NOT CHANGE */
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+}
+
+/*
+ * Modern theme — a calm, product-grade workstation.
+ *
+ * Light mode: quiet warm-neutral paper with a refined indigo-blue accent.
+ * Dark mode (default): near-black deep navy, restrained cyan/blue, subtle amber.
+ */
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.995 0.002 260);
+  --foreground: oklch(0.22 0.02 262);
+  --surface: oklch(0.985 0.003 262);
+  --surface-foreground: oklch(0.22 0.02 262);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 262);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.02 262);
+  --primary: oklch(0.52 0.16 258);
+  --primary-foreground: oklch(0.99 0.005 260);
+  --secondary: oklch(0.965 0.006 262);
+  --secondary-foreground: oklch(0.3 0.02 262);
+  --muted: oklch(0.965 0.006 262);
+  --muted-foreground: oklch(0.53 0.018 262);
+  --accent: oklch(0.955 0.014 256);
+  --accent-foreground: oklch(0.32 0.06 258);
+  --destructive: oklch(0.58 0.2 25);
+  --border: oklch(0.915 0.006 262);
+  --input: oklch(0.915 0.006 262);
+  --ring: oklch(0.6 0.12 258);
+  --warning: oklch(0.68 0.14 70);
+  --success: oklch(0.6 0.13 165);
+  --chart-1: oklch(0.55 0.16 258);
+  --chart-2: oklch(0.62 0.12 195);
+  --chart-3: oklch(0.72 0.14 75);
+  --chart-4: oklch(0.6 0.13 165);
+  --chart-5: oklch(0.55 0.16 300);
+  --sidebar: oklch(0.985 0.003 262);
+  --sidebar-foreground: oklch(0.28 0.02 262);
+  --sidebar-primary: oklch(0.52 0.16 258);
+  --sidebar-primary-foreground: oklch(0.99 0.005 260);
+  --sidebar-accent: oklch(0.955 0.012 258);
+  --sidebar-accent-foreground: oklch(0.3 0.05 258);
+  --sidebar-border: oklch(0.915 0.006 262);
+  --sidebar-ring: oklch(0.6 0.12 258);
+}
+
+.dark {
+  --background: oklch(0.165 0.018 262);
+  --foreground: oklch(0.97 0.004 260);
+  --surface: oklch(0.2 0.018 262);
+  --surface-foreground: oklch(0.97 0.004 260);
+  --card: oklch(0.215 0.018 262);
+  --card-foreground: oklch(0.97 0.004 260);
+  --popover: oklch(0.22 0.018 262);
+  --popover-foreground: oklch(0.97 0.004 260);
+  --primary: oklch(0.76 0.11 232);
+  --primary-foreground: oklch(0.18 0.03 262);
+  --secondary: oklch(0.26 0.018 262);
+  --secondary-foreground: oklch(0.95 0.004 260);
+  --muted: oklch(0.255 0.016 262);
+  --muted-foreground: oklch(0.72 0.014 258);
+  --accent: oklch(0.28 0.026 250);
+  --accent-foreground: oklch(0.95 0.02 235);
+  --destructive: oklch(0.68 0.17 25);
+  --border: oklch(0.3 0.018 262);
+  --input: oklch(0.32 0.018 262);
+  --ring: oklch(0.7 0.1 235);
+  --warning: oklch(0.79 0.13 78);
+  --success: oklch(0.74 0.12 168);
+  --chart-1: oklch(0.76 0.11 232);
+  --chart-2: oklch(0.72 0.1 194);
+  --chart-3: oklch(0.79 0.13 78);
+  --chart-4: oklch(0.74 0.12 168);
+  --chart-5: oklch(0.7 0.13 300);
+  --sidebar: oklch(0.19 0.018 262);
+  --sidebar-foreground: oklch(0.9 0.008 258);
+  --sidebar-primary: oklch(0.76 0.11 232);
+  --sidebar-primary-foreground: oklch(0.18 0.03 262);
+  --sidebar-accent: oklch(0.26 0.024 250);
+  --sidebar-accent-foreground: oklch(0.96 0.02 235);
+  --sidebar-border: oklch(0.28 0.018 262);
+  --sidebar-ring: oklch(0.7 0.1 235);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: "opsz" 32;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+    text-wrap: balance;
+  }
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
+  }
+}
+
+@layer utilities {
+  /* Soft layered surface used for panels and cards across the workstation. */
+  .surface-panel {
+    @apply rounded-xl border border-border/80 bg-card;
+  }
+  .hairline {
+    @apply border-border/70;
+  }
+  .grid-backdrop {
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}

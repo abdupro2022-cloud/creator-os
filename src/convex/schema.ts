@@ -1,0 +1,329 @@
+import { authTables } from "@convex-dev/auth/server";
+import { defineSchema, defineTable } from "convex/server";
+import { Infer, v } from "convex/values";
+
+// default user roles. can add / remove based on the project as needed
+export const ROLES = {
+  ADMIN: "admin",
+  USER: "user",
+  MEMBER: "member",
+} as const;
+
+export const roleValidator = v.union(
+  v.literal(ROLES.ADMIN),
+  v.literal(ROLES.USER),
+  v.literal(ROLES.MEMBER),
+);
+export type Role = Infer<typeof roleValidator>;
+
+/**
+ * The creator pipeline. Only `idea` and `script` are implemented in version 1;
+ * the remaining stages are declared here so the UI can show honest progress
+ * instead of inventing features that do not exist yet.
+ */
+export const PIPELINE_STAGES = [
+  { id: "idea", label: "Idea", live: true },
+  { id: "research", label: "Research", live: false },
+  { id: "angle", label: "Angle", live: true },
+  { id: "script", label: "Script", live: true },
+  { id: "shorts", label: "Shorts", live: false },
+  { id: "seo", label: "SEO", live: false },
+  { id: "publish", label: "Publish", live: false },
+] as const;
+
+export const ideaStatusValidator = v.union(
+  v.literal("captured"),
+  v.literal("developing"),
+  v.literal("developed"),
+  v.literal("failed"),
+);
+export type IdeaStatus = Infer<typeof ideaStatusValidator>;
+
+export const scriptStatusValidator = v.union(
+  v.literal("drafting"),
+  v.literal("draft"),
+  v.literal("verified"),
+  v.literal("failed"),
+);
+export type ScriptStatus = Infer<typeof scriptStatusValidator>;
+
+export const sectionRoleValidator = v.union(
+  v.literal("hook"),
+  v.literal("intro"),
+  v.literal("body"),
+  v.literal("cta"),
+  v.literal("outro"),
+);
+export type SectionRole = Infer<typeof sectionRoleValidator>;
+
+export const sectionStatusValidator = v.union(
+  v.literal("queued"),
+  v.literal("writing"),
+  v.literal("written"),
+  v.literal("failed"),
+);
+
+/**
+ * Every claim the assistant produces is labelled so the creator can tell a
+ * verifiable fact from a model suggestion. Nothing is presented as sourced
+ * material unless a real source exists.
+ */
+export const knowledgeKindValidator = v.union(
+  v.literal("fact"),
+  v.literal("inference"),
+  v.literal("suggestion"),
+  v.literal("unverified"),
+);
+export type KnowledgeKind = Infer<typeof knowledgeKindValidator>;
+
+export const keyPointValidator = v.object({
+  text: v.string(),
+  kind: knowledgeKindValidator,
+});
+
+export const refinedIdeaValidator = v.object({
+  title: v.string(),
+  oneLiner: v.string(),
+  angle: v.string(),
+  hook: v.string(),
+  audience: v.string(),
+  format: v.union(
+    v.literal("long_form"),
+    v.literal("short"),
+    v.literal("both"),
+  ),
+  whyNow: v.string(),
+  keyPoints: v.array(keyPointValidator),
+  openQuestions: v.array(v.string()),
+  /** Claims that would need a real source before publishing. Never invented. */
+  riskNotes: v.array(v.string()),
+  model: v.string(),
+  generatedAt: v.number(),
+});
+export type RefinedIdea = Infer<typeof refinedIdeaValidator>;
+
+/** Safe, non-chain-of-thought progress labels shown to the creator. */
+export const runStepLabelValidator = v.union(
+  v.literal("Planning"),
+  v.literal("Analyzing"),
+  v.literal("Writing"),
+  v.literal("Verifying"),
+  v.literal("Saving"),
+);
+
+export const runStepValidator = v.object({
+  label: runStepLabelValidator,
+  status: v.union(
+    v.literal("started"),
+    v.literal("done"),
+    v.literal("failed"),
+  ),
+  detail: v.optional(v.string()),
+  at: v.number(),
+});
+
+export const runCandidateValidator = v.object({
+  provider: v.string(),
+  model: v.string(),
+  ok: v.boolean(),
+  latencyMs: v.optional(v.number()),
+  error: v.optional(v.string()),
+});
+
+export const runStatusValidator = v.union(
+  v.literal("queued"),
+  v.literal("running"),
+  v.literal("completed"),
+  v.literal("failed"),
+);
+export type RunStatus = Infer<typeof runStatusValidator>;
+
+export const runKindValidator = v.union(
+  v.literal("idea_development"),
+  v.literal("script_outline"),
+  v.literal("script_section"),
+  v.literal("script_verification"),
+);
+export type RunKind = Infer<typeof runKindValidator>;
+
+export const verificationValidator = v.object({
+  summary: v.string(),
+  score: v.number(),
+  model: v.string(),
+  checkedAt: v.number(),
+  issues: v.array(
+    v.object({
+      severity: v.union(
+        v.literal("info"),
+        v.literal("warning"),
+        v.literal("critical"),
+      ),
+      kind: v.string(),
+      message: v.string(),
+      sectionId: v.optional(v.string()),
+    }),
+  ),
+});
+
+const schema = defineSchema(
+  {
+    // default auth tables using convex auth.
+    ...authTables, // do not remove or modify
+
+    // the users table is the default users table that is brought in by the authTables
+    users: defineTable({
+      name: v.optional(v.string()), // name of the user. do not remove
+      image: v.optional(v.string()), // image of the user. do not remove
+      email: v.optional(v.string()), // email of the user. do not remove
+      emailVerificationTime: v.optional(v.number()), // email verification time. do not remove
+      isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
+
+      role: v.optional(roleValidator), // role of the user. do not remove
+    }).index("email", ["email"]), // index for the email. do not remove or modify
+
+    /** A context container. Ideas and scripts never mix across projects. */
+    projects: defineTable({
+      ownerId: v.id("users"),
+      name: v.string(),
+      description: v.optional(v.string()),
+      niche: v.optional(v.string()),
+      archived: v.boolean(),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_owner", ["ownerId", "updatedAt"])
+      .index("by_owner_name", ["ownerId", "name"]),
+
+    /** One creator identity per owner: language, tone, pacing, banned styles. */
+    creatorProfiles: defineTable({
+      ownerId: v.id("users"),
+      displayName: v.optional(v.string()),
+      language: v.string(),
+      dialect: v.string(),
+      tone: v.array(v.string()),
+      pacing: v.union(
+        v.literal("slow"),
+        v.literal("medium"),
+        v.literal("fast"),
+      ),
+      storytelling: v.array(v.string()),
+      audience: v.string(),
+      targetLengthMin: v.number(),
+      hookStyles: v.array(v.string()),
+      prohibited: v.array(v.string()),
+      notes: v.optional(v.string()),
+      updatedAt: v.number(),
+    }).index("by_owner", ["ownerId"]),
+
+    /** Raw sparks plus the developed angle produced by the agent. */
+    ideas: defineTable({
+      ownerId: v.id("users"),
+      projectId: v.id("projects"),
+      rawInput: v.string(),
+      status: ideaStatusValidator,
+      refined: v.optional(refinedIdeaValidator),
+      lastRunId: v.optional(v.id("aiRuns")),
+      errorMessage: v.optional(v.string()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_owner_created", ["ownerId", "createdAt"])
+      .index("by_project", ["projectId", "createdAt"])
+      .index("by_status", ["ownerId", "status"]),
+
+    scripts: defineTable({
+      ownerId: v.id("users"),
+      projectId: v.id("projects"),
+      ideaId: v.optional(v.id("ideas")),
+      title: v.string(),
+      status: scriptStatusValidator,
+      targetDurationSec: v.number(),
+      wordsPerMinute: v.number(),
+      wordCount: v.number(),
+      estSeconds: v.number(),
+      verification: v.optional(verificationValidator),
+      lastRunId: v.optional(v.id("aiRuns")),
+      errorMessage: v.optional(v.string()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_owner_updated", ["ownerId", "updatedAt"])
+      .index("by_project", ["projectId", "updatedAt"]),
+
+    scriptSections: defineTable({
+      ownerId: v.id("users"),
+      scriptId: v.id("scripts"),
+      projectId: v.id("projects"),
+      order: v.number(),
+      role: sectionRoleValidator,
+      heading: v.string(),
+      intent: v.optional(v.string()),
+      body: v.string(),
+      notes: v.optional(v.string()),
+      status: sectionStatusValidator,
+      targetWords: v.number(),
+      wordCount: v.number(),
+      estSeconds: v.number(),
+      updatedAt: v.number(),
+    })
+      .index("by_script", ["scriptId", "order"])
+      .index("by_owner", ["ownerId"]),
+
+    /** Append-only snapshots so a draft can always be rolled back. */
+    scriptRevisions: defineTable({
+      ownerId: v.id("users"),
+      scriptId: v.id("scripts"),
+      label: v.string(),
+      reason: v.string(),
+      snapshot: v.string(),
+      wordCount: v.number(),
+      createdAt: v.number(),
+    }).index("by_script", ["scriptId", "createdAt"]),
+
+    /**
+     * Observability for every model call: which provider answered, how long it
+     * took, what it cost in tokens, and the safe progress labels shown in the UI.
+     */
+    aiRuns: defineTable({
+      ownerId: v.id("users"),
+      projectId: v.optional(v.id("projects")),
+      kind: runKindValidator,
+      status: runStatusValidator,
+      taskType: v.string(),
+      steps: v.array(runStepValidator),
+      candidates: v.array(runCandidateValidator),
+      provider: v.optional(v.string()),
+      model: v.optional(v.string()),
+      promptTokens: v.number(),
+      completionTokens: v.number(),
+      latencyMs: v.number(),
+      routingReason: v.optional(v.string()),
+      targetId: v.optional(v.string()),
+      errorMessage: v.optional(v.string()),
+      createdAt: v.number(),
+      finishedAt: v.optional(v.number()),
+    })
+      .index("by_owner_created", ["ownerId", "createdAt"])
+      .index("by_target", ["ownerId", "targetId", "createdAt"]),
+
+    settings: defineTable({
+      ownerId: v.id("users"),
+      ideaModel: v.optional(v.string()),
+      scriptModel: v.optional(v.string()),
+      verificationModel: v.optional(v.string()),
+      routingPreference: v.union(
+        v.literal("balanced"),
+        v.literal("quality"),
+        v.literal("speed"),
+      ),
+      extraModelIds: v.array(v.string()),
+      autoVerify: v.boolean(),
+      updatedAt: v.number(),
+    }).index("by_owner", ["ownerId"]),
+  },
+  {
+    schemaValidation: false,
+  },
+);
+
+export default schema;
