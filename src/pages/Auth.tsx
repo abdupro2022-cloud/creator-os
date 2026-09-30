@@ -80,9 +80,10 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       const formData = new FormData(event.currentTarget);
       await signIn("email-otp", formData);
 
-      console.log("signed in");
-
-      navigate(redirect);
+      // No navigate() here on purpose: the effect above owns the redirect. Two
+      // navigations in the same commit (one from this handler, one from the
+      // effect reacting to isAuthenticated) made React delete a DOM node that
+      // had already been removed.
     } catch (error) {
       console.error("OTP verification error:", error);
 
@@ -100,7 +101,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       console.log("Attempting anonymous sign in...");
       await signIn("anonymous");
       console.log("Anonymous sign in successful");
-      navigate(redirect);
+      // Redirect happens in the effect above, for the same reason as email-otp.
     } catch (error) {
       console.error("Guest login error:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));

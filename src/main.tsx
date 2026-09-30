@@ -22,6 +22,7 @@ const PublishKit = lazy(() => import("./pages/PublishKit.tsx"));
 const Projects = lazy(() => import("./pages/Projects.tsx"));
 const StyleProfile = lazy(() => import("./pages/StyleProfile.tsx"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage.tsx"));
+const Tools = lazy(() => import("./pages/Tools.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
 // Resolve the creator's theme before the first paint so the workstation never
@@ -95,6 +96,22 @@ class RootErrorBoundary extends React.Component<
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
+/**
+ * React gets a container of its own instead of mounting straight into #root.
+ *
+ * The preview runtime injects its own elements into #root. When React owned
+ * that element it deleted "its" children blindly and hit a node that had been
+ * moved by the injected overlay:
+ *   NotFoundError: removeChild — the node to be removed is not a child of this node
+ * Mounting into a dedicated child div means React only ever removes nodes it
+ * created itself, so injected siblings can no longer desync the commit phase.
+ */
+const appHost = document.getElementById("root");
+if (!appHost) throw new Error("Missing #root element.");
+const reactContainer = document.createElement("div");
+reactContainer.id = "abdo-app";
+appHost.appendChild(reactContainer);
+
 
 
 function RouteSyncer() {
@@ -121,7 +138,7 @@ function RouteSyncer() {
 }
 
 
-createRoot(document.getElementById("root")!).render(
+createRoot(reactContainer).render(
   <StrictMode>
     <RootErrorBoundary>
       <ToolbarErrorBoundary>
@@ -159,6 +176,7 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="projects" element={<Projects />} />
                 <Route path="style" element={<StyleProfile />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="tools" element={<Tools />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

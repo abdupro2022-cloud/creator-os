@@ -18,6 +18,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  Plug,
   Settings,
   Sun,
   Workflow,
@@ -38,6 +39,7 @@ const NAV: NavItem[] = [
   { to: "/dashboard/scripts", label: "Scripts", icon: FileText },
   { to: "/dashboard/projects", label: "Projects", icon: FolderKanban },
   { to: "/dashboard/style", label: "Style Profile", icon: Fingerprint },
+  { to: "/dashboard/tools", label: "Tools", icon: Plug },
   { to: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
