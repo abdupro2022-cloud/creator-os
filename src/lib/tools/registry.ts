@@ -521,8 +521,7 @@ export function planChapters(
   // return a list that will simply be ignored, relax the minimum — but never
   // below the 10 seconds YouTube itself requires — so the markers stay useful.
   if (
-    input.sections.length > 0 &&
-    chapters.length > 1 &&
+    input.sections.length > 1 &&
     chapters.length < 3 &&
     threshold > CHAPTER_FLOOR_SECONDS
   ) {
