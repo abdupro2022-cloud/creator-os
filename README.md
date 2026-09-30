@@ -309,7 +309,7 @@ A personal AI operating system for one solo YouTube creator. Version 1 ships one
 | Write | Drafting agent | One model call per section, written straight to the database, so Script Studio fills in progressively. A failed section is marked failed and the rest continue. |
 | Verify | Script Studio | `script.qa_scan` (deterministic: empty sections, prohibited style, filler openers, repeated lines, unsourced evidence claims) + a model review pass. Both sets of findings are stored on the script. |
 | Revise | Script Studio | Section editing with debounced autosave, per-section AI rewrite, reordering, add/remove, snapshots and restore, live word count and duration estimate. |
-| Package | Publish Kit | `publish.chapter_plan` derives chapter markers **arithmetically** from the real per-section durations, then one model call writes title options, the description, tags, a pinned comment, a thumbnail brief and the Shorts cuts. `publish.metadata_check` then measures every field against YouTube's real limits and records what needs fixing. |
+| Package | Publish Kit | `publish.chapter_plan` derives chapter markers **arithmetically** from the real per-section durations (relaxing to YouTube's 10-second floor when a short video would otherwise produce a list the platform ignores), then one model call writes title options, the description, tags, a pinned comment, a thumbnail brief and the Shorts cuts. `publish.metadata_check` then measures every field against YouTube's real limits and records what needs fixing. |
 | Choose | Publish Kit | The chosen title is stored on the pack, and description / chapters / tags / Shorts copy are one click each. |
 
 The **first screen** (Command Center) shows the pipeline with real counts, an inline capture box, ideas
@@ -365,8 +365,19 @@ publish kit is marked failed and retryable rather than left looking successful.
 
 Tasks declare required capabilities (`text`, `structuredOutput`) and curated strengths (`reasoning`,
 `writing`, `longContext`, `speed`, `cost`). Verified ids are preferred, the creator can pin a model per
-task in Settings, and the chain always ends with `openai/gpt-5.4-mini` so an unavailable provider
-degrades into a real answer. Every attempt — including the ones that failed — is recorded on the run.
+task in Settings, and the chain always ends with `anthropic/claude-haiku-4.5` so an unavailable
+provider degrades into a real answer. Every attempt — including the ones that failed — is recorded on
+the run.
+
+**The fallback is a load-bearing part of the product, so it is tested, not assumed.** While building
+the publish kit it turned out that the whole `openai/gpt-5.4` family had stopped answering through
+this gateway — *every* request failed with `Invalid JSON response`, including a one-line Arabic prompt
+and a plain-text one. That silently disabled two things at once: the universal fallback (which was
+`gpt-5.4-mini`) and the second candidate for the publish route. The fix was to move the fallback to
+an id that demonstrably answers, and to mark the dead family `verified: false` +
+`structuredOutput: false` so routing can never pick it again — it stays in the catalog only so the
+failure is visible in Settings. Ids that answered a real request in testing:
+`claude-sonnet-4.5`, `claude-haiku-4.5`, `gemini-2.5-pro`, `deepseek-v3.2`, `gpt-4o-mini`.
 
 Settings → *Check gateway* calls `ai.exec:inventory` to show how many models this deployment can
 really reach (the gateway serves 390; 12 are catalogued).
@@ -381,6 +392,12 @@ bun convex run ai/exec:listModels              # live model inventory
 The drafting path was verified against the live gateway end to end (idea development, outline,
 8/8 sections, QA scan, verification with an Arabic idea and a full style profile), and every internal
 mutation the agent calls was exercised against the real database before shipping.
+
+The publish path was verified the same way, through the real routing chain and the real prompt: an
+Arabic draft produced 7 chapter markers whose timestamps matched the section lengths, 4 title options
+under YouTube's limits, a 526-character description, 10 cleaned tags, 3 Shorts cuts that were each
+traced back to a section heading that really exists, and a metadata check with no findings. The
+verification harness was read-only and has been deleted.
 
 ## Known boundaries
 
