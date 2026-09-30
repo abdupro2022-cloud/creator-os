@@ -56,8 +56,18 @@ class ToolbarErrorBoundary extends React.Component<
   }
 }
 
-/** Hard guard so runtime errors never leave the preview as a blank page. */
-class RootErrorBoundary extends React.Component<
+/**
+ * Clears a caught error whenever the route changes.
+ *
+ * A boundary that latches is the worst possible behaviour in a multi-screen
+ * app: one bad screen leaves the error on screen forever, and every later
+ * navigation looks broken too. It has to sit inside the router (to read the
+ * location) while the boundary itself sits above it, so the reset travels
+ * upwards through a module-level subscriber.
+ */
+let clearBoundaryError: (() => void) | null = null;
+
+class ResettableRootErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; message: string; stack: string }
 > {
@@ -72,13 +82,24 @@ class RootErrorBoundary extends React.Component<
   componentDidCatch(err: Error) {
     console.error("[Preview] Root crash:", err);
   }
+  componentDidMount() {
+    clearBoundaryError = () => {
+      this.setState({ hasError: false, message: "", stack: "" });
+    };
+  }
+  componentWillUnmount() {
+    clearBoundaryError = null;
+  }
   render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
           <div className="max-w-lg text-center">
-            <p className="text-sm font-semibold">Preview runtime error</p>
-            <p className="mt-2 text-xs text-muted-foreground break-words">
+            <p className="text-sm font-semibold">This screen hit an error</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Only this screen is affected — the rest of the workspace is fine.
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground break-words">
               {this.state.message}
             </p>
             {this.state.stack && (
@@ -86,6 +107,14 @@ class RootErrorBoundary extends React.Component<
                 {this.state.stack}
               </pre>
             )}
+            <div className="mt-4 flex justify-center">
+              <a
+                href="/dashboard"
+                className="rounded-md border border-border bg-muted/60 px-3 py-1.5 text-xs font-medium hover:bg-accent"
+              >
+                Back to the Command Center
+              </a>
+            </div>
           </div>
         </div>
       );
@@ -117,6 +146,10 @@ appHost.appendChild(reactContainer);
 function RouteSyncer() {
   const location = useLocation();
   useEffect(() => {
+    // One bad screen must not make every later screen look broken.
+    clearBoundaryError?.();
+  }, [location.pathname]);
+  useEffect(() => {
     window.parent.postMessage(
       { type: "iframe-route-change", path: location.pathname },
       "*",
@@ -125,9 +158,20 @@ function RouteSyncer() {
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
-      if (event.data?.type === "navigate") {
-        if (event.data.direction === "back") window.history.back();
-        if (event.data.direction === "forward") window.history.forward();
+      if (event.data?.type !== "navigate") return;
+      // history.back() with nothing behind this frame throws the creator out of
+      // the app entirely — into whatever page the host had before. Inside the
+      // app, "back" always means the app's own Command Center.
+      const insideApp = window.location.pathname.startsWith("/dashboard");
+      if (event.data.direction === "back") {
+        if (insideApp && window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.replace("/dashboard");
+        }
+      }
+      if (event.data.direction === "forward") {
+        window.history.forward();
       }
     }
     window.addEventListener("message", handleMessage);
@@ -140,7 +184,7 @@ function RouteSyncer() {
 
 createRoot(reactContainer).render(
   <StrictMode>
-    <RootErrorBoundary>
+    <ResettableRootErrorBoundary>
       <ToolbarErrorBoundary>
         <VlyToolbar />
       </ToolbarErrorBoundary>
@@ -177,6 +221,10 @@ createRoot(reactContainer).render(
                 <Route path="style" element={<StyleProfile />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="tools" element={<Tools />} />
+                {/* An unknown screen inside the workspace stays in the
+                    workspace: the shell, the sidebar and a way forward are
+                    still there, instead of a bare page outside it. */}
+                <Route path="*" element={<NotFound />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
@@ -184,6 +232,6 @@ createRoot(reactContainer).render(
         </BrowserRouter>
         <Toaster />
       </ConvexAuthProvider>
-    </RootErrorBoundary>
+    </ResettableRootErrorBoundary>
   </StrictMode>,
 );
