@@ -25,7 +25,12 @@ export type Role = Infer<typeof roleValidator>;
  */
 export const PIPELINE_STAGES = [
   { id: "idea", label: "Idea", live: true },
-  { id: "research", label: "Research", live: false, note: "Not built" },
+  {
+    id: "research",
+    label: "Research",
+    live: true,
+    note: "Sourced, needs a key",
+  },
   { id: "angle", label: "Angle", live: true },
   { id: "script", label: "Script", live: true },
   { id: "shorts", label: "Shorts", live: true, note: "Cut plan" },
@@ -141,6 +146,7 @@ export const runStatusValidator = v.union(
 export type RunStatus = Infer<typeof runStatusValidator>;
 
 export const runKindValidator = v.union(
+  v.literal("research"),
   v.literal("idea_development"),
   v.literal("script_outline"),
   v.literal("script_section"),
@@ -149,6 +155,32 @@ export const runKindValidator = v.union(
 );
 export type RunKind = Infer<typeof runKindValidator>;
 
+/* ----------------------------- research ----------------------------- */
+
+/**
+ * A source is only ever stored after a real fetch returned it. The URL comes
+ * from the vendor, never from the model, so a citation can always be opened.
+ */
+export const sourceValidator = v.object({
+  title: v.string(),
+  url: v.string(),
+  snippet: v.string(),
+});
+export type Source = Infer<typeof sourceValidator>;
+
+export const researchKindValidator = v.union(
+  v.literal("web"),
+  v.literal("transcript"),
+  v.literal("page"),
+);
+export type ResearchKind = Infer<typeof researchKindValidator>;
+
+/**
+ * Material gathered from outside the model: a Tavily search, a Supadata
+ * transcript, or a page Firecrawl rendered to markdown. The summary is written
+ * by the model but every citation in it is checked against `sources` before it
+ * is stored.
+ */
 /* --------------------------- publish kit --------------------------- */
 
 export const publishStatusValidator = v.union(
@@ -315,6 +347,30 @@ const schema = defineSchema(
       .index("by_script", ["scriptId", "order"])
       .index("by_owner", ["ownerId"]),
 
+    /**
+     * One gathered research note per request. `sources` are the real URLs the
+     * vendor returned; `summary` is the model's digest of them, and every
+     * citation in it is verified against `sources` before saving.
+     */
+    researchNotes: defineTable({
+      ownerId: v.id("users"),
+      projectId: v.id("projects"),
+      ideaId: v.optional(v.id("ideas")),
+      kind: researchKindValidator,
+      /** What the creator asked for: a query, a video URL, or a page URL. */
+      input: v.string(),
+      summary: v.string(),
+      findings: v.array(v.string()),
+      sources: v.array(sourceValidator),
+      /** What the material does not answer — recorded, never silently dropped. */
+      gaps: v.array(v.string()),
+      model: v.optional(v.string()),
+      lastRunId: v.optional(v.id("aiRuns")),
+      createdAt: v.number(),
+    })
+      .index("by_owner_created", ["ownerId", "createdAt"])
+      .index("by_idea", ["ideaId", "createdAt"]),
+
     /** Append-only snapshots so a draft can always be rolled back. */
     scriptRevisions: defineTable({
       ownerId: v.id("users"),
@@ -394,6 +450,11 @@ const schema = defineSchema(
       ),
       extraModelIds: v.array(v.string()),
       autoVerify: v.boolean(),
+      /** YouTube Data API: channel id, or the @handle without the @. */
+      youtubeChannelId: v.optional(v.string()),
+      /** Spreadsheet that receives every publish kit as a tracking row. */
+      trackingSheetId: v.optional(v.string()),
+      trackingSheetTab: v.optional(v.string()),
       updatedAt: v.number(),
     }).index("by_owner", ["ownerId"]),
   },

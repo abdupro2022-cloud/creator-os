@@ -106,6 +106,181 @@ export const complete = internalAction({
 });
 
 /**
+ * Direct provider calls, used only as a last resort.
+ *
+ * The gateway is the primary path because it needs one credential and routes
+ * by capability. But the creator may also hold their own keys for DeepSeek,
+ * Gemini or OpenRouter, and when the gateway is down or a model id is dead
+ * those keys are the difference between a finished draft and a failed run.
+ * They are tried after every gateway candidate has failed, never before, so a
+ * healthy gateway is not paid for twice.
+ */
+
+const DIRECT_PROVIDERS = {
+  deepseek: {
+    label: "DeepSeek",
+    envVar: "DEEPSEEK_API_KEY",
+    url: "https://api.deepseek.com/chat/completions",
+    model: "deepseek-chat",
+    queryKey: false,
+  },
+  gemini: {
+    label: "Google Gemini",
+    envVar: "GEMINI_API_KEY",
+    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    model: "gemini-2.5-flash",
+    queryKey: true,
+  },
+  openrouter: {
+    label: "OpenRouter",
+    envVar: "OPENROUTER_API_KEY",
+    url: "https://openrouter.ai/api/v1/chat/completions",
+    model: "anthropic/claude-haiku-4.5",
+    queryKey: false,
+  },
+} as const;
+
+type DirectProviderId = keyof typeof DIRECT_PROVIDERS;
+
+export const directProviders = internalAction({
+  args: {},
+  handler: async (): Promise<{ id: DirectProviderId; label: string; model: string }[]> => {
+    return (Object.keys(DIRECT_PROVIDERS) as DirectProviderId[])
+      .filter((id) => Boolean(process.env[DIRECT_PROVIDERS[id].envVar]?.trim()))
+      .map((id) => ({
+        id,
+        label: DIRECT_PROVIDERS[id].label,
+        model: DIRECT_PROVIDERS[id].model,
+      }));
+  },
+});
+
+export const completeDirect = internalAction({
+  args: {
+    provider: v.string(),
+    messages: messagesValidator,
+    temperature: v.number(),
+    maxTokens: v.number(),
+  },
+  handler: async (_ctx, args) => {
+    const startedAt = Date.now();
+    const provider = DIRECT_PROVIDERS[args.provider as DirectProviderId];
+    if (!provider) {
+      return {
+        ok: false as const,
+        latencyMs: 0,
+        error: `Unknown direct provider "${args.provider}".`,
+      };
+    }
+    const key = process.env[provider.envVar]?.trim();
+    if (!key) {
+      return {
+        ok: false as const,
+        latencyMs: 0,
+        error: `${provider.envVar} is not set on this deployment.`,
+      };
+    }
+
+    // Gemini speaks a different request shape and returns a different envelope,
+    // so it gets its own body rather than being forced through the OpenAI one.
+    const isGemini = args.provider === "gemini";
+    const url = provider.queryKey
+      ? `${provider.url}?key=${encodeURIComponent(key)}`
+      : provider.url;
+    const body = isGemini
+      ? {
+          contents: args.messages
+            .filter((message) => message.role !== "system")
+            .map((message) => ({
+              role: message.role === "assistant" ? "model" : "user",
+              parts: [{ text: message.content }],
+            })),
+          systemInstruction: {
+            parts: [
+              {
+                text:
+                  args.messages.find((message) => message.role === "system")
+                    ?.content ?? "",
+              },
+            ],
+          },
+          generationConfig: {
+            temperature: args.temperature,
+            maxOutputTokens: Math.max(16, Math.round(args.maxTokens)),
+          },
+        }
+      : {
+          model: provider.model,
+          messages: args.messages,
+          temperature: args.temperature,
+          max_tokens: Math.max(16, Math.round(args.maxTokens)),
+        };
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(isGemini ? {} : { Authorization: `Bearer ${key}` }),
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30_000),
+      });
+
+      const raw = await response.text().catch(() => "");
+      if (!response.ok) {
+        return {
+          ok: false as const,
+          latencyMs: Date.now() - startedAt,
+          error: `${provider.label} answered HTTP ${response.status}: ${explain(raw)}`,
+        };
+      }
+
+      const payload = JSON.parse(raw) as {
+        choices?: { message?: { content?: string } }[];
+        candidates?: { content?: { parts?: { text?: string }[] } }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+        usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+      };
+
+      const text = isGemini
+        ? (payload.candidates?.[0]?.content?.parts ?? [])
+            .map((part) => part.text ?? "")
+            .join("")
+        : (payload.choices?.[0]?.message?.content ?? "");
+
+      if (!text.trim()) {
+        return {
+          ok: false as const,
+          latencyMs: Date.now() - startedAt,
+          error: `${provider.label} returned an empty completion.`,
+        };
+      }
+
+      return {
+        ok: true as const,
+        text,
+        latencyMs: Date.now() - startedAt,
+        promptTokens:
+          payload.usage?.prompt_tokens ?? payload.usageMetadata?.promptTokenCount ?? 0,
+        completionTokens:
+          payload.usage?.completion_tokens ??
+          payload.usageMetadata?.candidatesTokenCount ??
+          0,
+      };
+    } catch (error) {
+      return {
+        ok: false as const,
+        latencyMs: Date.now() - startedAt,
+        error: explain(
+          error instanceof Error ? error.message : `${provider.label} failed.`,
+        ),
+      };
+    }
+  },
+});
+
+/**
  * Ask the gateway which models it can actually serve, so Settings shows real
  * availability instead of a hard-coded wish list.
  */

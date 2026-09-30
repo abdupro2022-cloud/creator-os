@@ -56,6 +56,51 @@ function untrusted(label: string, content: string): string {
   return `<untrusted_data source="${label}">\n${content.trim()}\n</untrusted_data>`;
 }
 
+/**
+ * A research brief, written only from material that was really fetched.
+ *
+ * The model is given numbered sources and must cite them as [n]. It cannot
+ * invent a URL, and the citation checker rejects the summary afterwards if a
+ * number has no source behind it.
+ */
+export function buildResearchMessages(input: {
+  query: string;
+  kind: "web" | "transcript" | "page";
+  sources: { title: string; url: string; snippet: string }[];
+  profile?: StyleProfileInput | null;
+}): ChatMessage[] {
+  const system = `${SYSTEM_GUARD}\n\n${styleBlock(input.profile)}\n\nYou are summarising material that was just fetched from the web. Respond with JSON matching exactly this shape:
+{"summary": string (3-6 sentences, in the creator's language),
+ "findings": string[] (2-6 short, specific, reusable facts — each one must end with the citation numbers it came from, like " [1]"),
+ "gaps": string[] (what the material does NOT answer, so the creator knows what is still unverified)}`;
+
+  const material = input.sources
+    .map(
+      (source, index) =>
+        `[${index + 1}] ${source.title}\nURL: ${source.url}\n${source.snippet}`,
+    )
+    .join("\n\n");
+
+  const user = `Research question: ${input.query}
+Material type: ${
+    input.kind === "web"
+      ? "web search results"
+      : input.kind === "transcript"
+        ? "the spoken transcript of one video"
+        : "the text of one web page"
+  }
+
+Sources that were actually fetched (this is the complete set — there is no other material, and you may not cite a number that is not listed here):
+${untrusted("fetched sources", material)}
+
+Write the brief. Every finding must end with the citation numbers it came from. If the material does not support a claim, put it in "gaps" instead of asserting it. Never add a source of your own.`;
+
+  return [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+}
+
 export function buildIdeaMessages(input: {
   rawInput: string;
   projectName: string;

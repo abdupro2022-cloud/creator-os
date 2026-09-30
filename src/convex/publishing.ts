@@ -109,6 +109,25 @@ export const deletePack = mutation({
   },
 });
 
+/**
+ * The tracking-sheet append needs the pack and the script's real word count
+ * without going through a client-facing query, so the row it writes is built
+ * from the same fields the publish page shows.
+ */
+export const forTrackingSheet = internalQuery({
+  args: { scriptId: v.id("scripts"), ownerId: v.id("users") },
+  handler: async (ctx, args) => {
+    const script = await ctx.db.get(args.scriptId);
+    if (!script || script.ownerId !== args.ownerId) return null;
+    const pack = await ctx.db
+      .query("publishPacks")
+      .withIndex("by_script", (q) => q.eq("scriptId", args.scriptId))
+      .first();
+    if (!pack) return null;
+    return { pack, wordCount: script.wordCount };
+  },
+});
+
 /* ------------------------- agent core entry points ------------------------- */
 
 export const loadForScript = internalQuery({

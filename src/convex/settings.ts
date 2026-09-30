@@ -16,6 +16,9 @@ export interface EffectiveSettings {
   routingPreference: "balanced" | "quality" | "speed";
   extraModelIds: string[];
   autoVerify: boolean;
+  youtubeChannelId?: string;
+  trackingSheetId?: string;
+  trackingSheetTab?: string;
 }
 
 /** Read settings for any owner id — used by the agent core and by queries. */
@@ -34,6 +37,9 @@ async function readSettings(
     routingPreference: doc?.routingPreference ?? "balanced",
     extraModelIds: doc?.extraModelIds ?? [],
     autoVerify: doc?.autoVerify ?? true,
+    youtubeChannelId: doc?.youtubeChannelId || undefined,
+    trackingSheetId: doc?.trackingSheetId || undefined,
+    trackingSheetTab: doc?.trackingSheetTab || undefined,
   };
 }
 

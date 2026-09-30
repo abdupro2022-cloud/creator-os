@@ -745,6 +745,72 @@ export function checkMetadata(
 }
 
 /* ------------------------------------------------------------------ */
+/* 6. research.citation_check                                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A citation is only real when it points at a URL that was actually fetched.
+ *
+ * The model writes `[2]` in its prose; this checks that a source numbered 2
+ * really exists in the fetched set, and reports every number that does not.
+ * Nothing here is a judgement about the web — it is arithmetic over the URLs
+ * the vendor returned.
+ */
+const citationCheckInput = z.object({
+  summary: z.string(),
+  sources: z.array(z.object({ title: z.string(), url: z.string() })).min(1),
+});
+
+const citationCheckOutput = z.object({
+  cited: z.array(z.number()),
+  dangling: z.array(z.number()),
+  uncited: z.array(z.number()),
+  issues: z.array(outlineIssueSchema),
+});
+
+export type CitationCheck = z.infer<typeof citationCheckOutput>;
+
+export function checkCitations(input: z.infer<typeof citationCheckInput>): CitationCheck {
+  const cited = new Set<number>();
+  // [3] and [3, 4] both occur in practice, so both separators are accepted.
+  for (const match of input.summary.matchAll(/\[(\d{1,2})\]/g)) {
+    const index = Number.parseInt(match[1], 10);
+    if (Number.isFinite(index)) cited.add(index);
+  }
+
+  const real = new Set(
+    input.sources.map((_, index) => index + 1),
+  );
+  const ordered = (values: Set<number>) => [...values].sort((a, b) => a - b);
+  const dangling = new Set([...cited].filter((index) => !real.has(index)));
+  const uncited = new Set([...real].filter((index) => !cited.has(index)));
+
+  const issues: CitationCheck["issues"] = [];
+  if (dangling.size > 0) {
+    issues.push({
+      severity: "critical",
+      kind: "fabricated_citation",
+      message: `The summary cites [${ordered(dangling).join("], [")}], which no fetched source backs.`,
+    });
+  }
+  if (cited.size === 0) {
+    issues.push({
+      severity: "warning",
+      kind: "no_citations",
+      message:
+        "The summary states no citations, so none of its claims are traceable to a source.",
+    });
+  }
+
+  return {
+    cited: ordered(cited),
+    dangling: ordered(dangling),
+    uncited: ordered(uncited),
+    issues,
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /* Registry                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -803,6 +869,17 @@ export const TOOLS: ToolDefinition[] = [
     inputSchema: metadataCheckInput,
     outputSchema: metadataCheckOutput,
     run: async (input) => checkMetadata(input as z.infer<typeof metadataCheckInput>),
+  },
+  {
+    id: "research.citation_check",
+    name: "Citation checker",
+    description:
+      "Verifies that every [n] citation in a research summary points at a source that was really fetched, and reports the ones that do not.",
+    permission: "READ",
+    requiresConfirmation: false,
+    inputSchema: citationCheckInput,
+    outputSchema: citationCheckOutput,
+    run: async (input) => checkCitations(input as z.infer<typeof citationCheckInput>),
   },
 ];
 
