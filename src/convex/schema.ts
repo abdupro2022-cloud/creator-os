@@ -20,8 +20,9 @@ export type Role = Infer<typeof roleValidator>;
  * The creator pipeline.
  *
  * `live` marks a stage that really produces something today. `note` states the
- * exact boundary — Shorts and SEO are generated plans, and Publish builds the
- * kit but never uploads anywhere. Research is still not built.
+ * exact boundary — Research fetches from a vendor only when its key is set,
+ * Shorts and SEO are generated plans, and Publish builds the kit but never
+ * uploads anywhere.
  */
 export const PIPELINE_STAGES = [
   { id: "idea", label: "Idea", live: true },
@@ -29,7 +30,7 @@ export const PIPELINE_STAGES = [
     id: "research",
     label: "Research",
     live: true,
-    note: "Sourced, needs a key",
+    note: "Needs a research key",
   },
   { id: "angle", label: "Angle", live: true },
   { id: "script", label: "Script", live: true },

@@ -23,7 +23,13 @@ import { Link } from "react-router";
  */
 const STAGES = [
   { id: "idea", label: "Idea", icon: Lightbulb, live: true },
-  { id: "research", label: "Research", icon: Search, live: false },
+  {
+    id: "research",
+    label: "Research",
+    icon: Search,
+    live: true,
+    note: "Needs a research key",
+  },
   { id: "angle", label: "Angle", icon: Compass, live: true },
   { id: "script", label: "Script", icon: PenLine, live: true },
   { id: "shorts", label: "Shorts", icon: Film, live: true, note: "Cut plan" },
@@ -36,6 +42,8 @@ export interface PipelineCounts {
   developed: number;
   capturing?: number;
   scripts: number;
+  /** Sourced research briefs that passed the citation check. */
+  research?: number;
   /** Publish kits — one covers Shorts, SEO and publish together. */
   kits?: number;
 }
@@ -52,6 +60,7 @@ export function PipelineMap({
   const { t } = useI18n();
   const valueFor = (id: string): number | null => {
     if (id === "idea") return counts.ideas;
+    if (id === "research") return counts.research ?? 0;
     if (id === "angle") return counts.developed;
     if (id === "script") return counts.scripts;
     if (id === "shorts" || id === "seo" || id === "publish") {
@@ -67,7 +76,9 @@ export function PipelineMap({
           {t("Creator pipeline")}
         </h2>
         <p className="text-[11px] text-muted-foreground">
-          {t("Idea → angle → script → publish kit, end to end. Research is not built.")}
+          {t(
+            "Idea → research → angle → script → publish kit, end to end. Nothing is ever uploaded to YouTube.",
+          )}
         </p>
       </div>
 

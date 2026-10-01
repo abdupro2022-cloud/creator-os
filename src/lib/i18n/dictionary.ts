@@ -53,8 +53,9 @@ export const ar: Record<string, string> = {
   "No exposed chain-of-thought": "لا كشف لسلسلة التفكير",
   "API keys never reach the browser": "مفاتيح API لا تصل المتصفح أبداً",
   "The pipeline, honestly labelled": "المسار، بموضوعية",
-  "Version 1 ships idea → angle → script end to end. Everything else is marked as not built, because a plan is not a product.":
-    "الإصدار الأول يشحن فكرة ← زاوية ← نص بشكل متكامل. وكل ما عداه معلَّم كغير مبنيّ، لأن الخطة ليست منتجاً.",
+  "Idea → research → angle → script → publish kit ships end to end. Every stage below is labelled with the exact boundary it has — a plan is not a product.":
+    "المسار من الفكرة إلى البحث إلى الزاوية إلى النص إلى حزمة النشر موصول من أوله لآخره. كل مرحلة موصوفة بحدودها الفعلية — الخطة ليست منتجًا.",
+  "Needs a research key": "يحتاج مفتاح بحث",
   Capture: "التقاط",
   "Write the thought the way you would say it. It is stored before any model runs, so nothing is lost if a provider fails.":
     "اكتب الفكرة بالطريقة التي تقولها بها. تُحفظ قبل تشغيل أي نموذج، فلا تضيع إن فشل مزوّد.",
@@ -87,9 +88,7 @@ export const ar: Record<string, string> = {
   "Not built yet — and listed as such": "غير مبنيّ بعد — ومُدرج كذلك",
   "These modules are designed but deliberately excluded from version 1. There are no placeholder buttons and no fake data for them anywhere in the app.":
     "هذه الوحدات مصمَّمة لكنها مستبعدة عمداً من الإصدار الأول. لا توجد أزرار وهمية ولا بيانات مزوّرة لها في أي مكان من التطبيق.",
-  "Web research, sources and citations": "بحث الويب والمصادر والاستشهادات",
-  "YouTube research and competitor analysis": "بحث يوتيوب وتحليل المنافسين",
-  "Shorts generation and SEO metadata": "توليد الشورتس وبيانات SEO",
+  "YouTube competitor analysis": "تحليل منافسي يوتيوب",
   "Files, PDFs and retrieval": "الملفات وملفات PDF والاسترجاع",
   "Long-term memory and background tasks": "ذاكرة طويلة الأمد ومهام خلفية",
   "How it is put together": "كيف بُني",
@@ -135,13 +134,13 @@ export const ar: Record<string, string> = {
   "Switch to English": "التبديل إلى الإنجليزية",
   Language: "اللغة",
   "Live pipeline": "المسار الحيّ",
-  "Idea → Angle → Script → Publish Kit is wired end to end. Research is not built, and nothing is ever uploaded to YouTube.":
-    "فكرة ← زاوية ← نص ← حزمة نشر متصلة بالكامل. البحث غير مبنيّ بعد، ولا يُرفع أي شيء إلى يوتيوب.",
+  "Idea → Research → Angle → Script → Publish Kit is wired end to end. Nothing is ever uploaded to YouTube.":
+    "المسار من الفكرة إلى البحث إلى الزاوية إلى النص إلى حزمة النشر موصول بالكامل. ولا يُرفع أي شيء إلى يوتيوب أبدًا.",
 
   // ---- pipeline map ------------------------------------------------------
   "Creator pipeline": "مسار المُنشئ",
-  "Idea → angle → script → publish kit, end to end. Research is not built.":
-    "فكرة ← زاوية ← نص ← حزمة نشر، من البداية إلى النهاية. البحث غير مبنيّ بعد.",
+  "Idea → research → angle → script → publish kit, end to end. Nothing is ever uploaded to YouTube.":
+    "الفكرة ← البحث ← الزاوية ← النص ← حزمة النشر، من أوله لآخره. ولا يُرفع أي شيء إلى يوتيوب.",
   "Cut plan": "خطة مونتاج",
   "Metadata kit": "حزمة البيانات",
   "No upload": "بدون رفع",
@@ -454,6 +453,85 @@ export const ar: Record<string, string> = {
   "This hook is {n} words — the opening usually lands better under 45.":
     "الهوك {n} كلمة — الافتتاحية عادةً أفضل تحت ٤٥ كلمة.",
 
+  // ---- youtube analytics ------------------------------------------------
+  "Channel statistics": "إحصائيات القناة",
+  "Could not read the channel": "تعذّرت قراءة القناة",
+  "Could not check upload readiness": "تعذّر فحص جاهزية الرفع",
+  Read: "مقروء",
+  Refresh: "تحديث",
+  "Load statistics": "تحميل الإحصائيات",
+  "Reads public numbers through the YouTube Data API. Configure your channel id or @handle in Settings; the key alone is enough to read, never to upload.":
+    "يقرأ الأرقام العلنية عبر YouTube Data API. اضبط معرّف قناتك أو @handle في الإعدادات؛ المفتاح يكفي للقراءة فقط، لا للرفع أبدًا.",
+  Subscribers: "المشتركون",
+  Hidden: "مخفي",
+  Views: "المشاهدات",
+  Videos: "الفيديوهات",
+  "Quota used": "الحصّة المستهلكة",
+  "Recent uploads": "أحدث الرفعات",
+  "The percentage compares each upload's views against your channel average across these videos.":
+    "النسبة تقارن مشاهادات كل رفع بمعدّل قناتك عبر هذه الفيديوهات.",
+  Uploading: "الرفع",
+  "Check readiness": "فحص الجاهزية",
+  "All three OAuth values are present. Publishing through the upload endpoint is possible.":
+    "قيم OAuth الثلاث موجودة. النشر عبر نقطة الرفع ممكن.",
+  "Reading a channel needs an API key. Uploading needs OAuth2 and cannot be done with a key — that is why there is no upload button here.":
+    "قراءة قناة تحتاج مفتاح API. الرفع يحتاج OAuth2 ولا يصحّ به مفتاح — لهذا لا يوجد زر رفع هنا.",
+
+  // ---- tracking sheet ----------------------------------------------------
+  "Tracking sheet": "جدول التتبّع",
+  "Push to sheet": "دفع إلى الجدول",
+  "Pushing…": "جارٍ الدفع…",
+  "Could not push to the sheet": "تعذّر الدفع إلى الجدول",
+  "Pushed to row {row}": "أُضيف في السطر {row}",
+  "Pushed to the tracking sheet": "أُضيف إلى جدول التتبّع",
+  "Writes one row with the title, description, tags, chapter and Shorts counts. Set the spreadsheet id in Settings first, and share that sheet with the service account's client_email as Editor.":
+    "يكتب سطرًا واحدًا بالعنوان والوصف والوسوم وعدد الفصول وقاطعات Shorts. اضبط معرّف الجدول في الإعدادات أولًا، ثم شاركه مع client_email الخاص بحساب الخدمة بصلاحية محرِّر.",
+  "Build the kit before pushing it.": "ابنِ الحزمة قبل دفعها.",
+  "Check setup": "فحص الإعداد",
+  "Could not check the sheet": "تعذّر فحص الجدول",
+  "The tracking sheet is wired up and reachable.": "جدول التتبّع موصول ويمكن الوصول إليه.",
+  "Added as row {row}.": "أُضيف في السطر {row}.",
+  "Added to the tracking sheet.": "أُضيف إلى جدول التتبّع.",
+  "Open the sheet": "افتح الجدول",
+
+  // ---- research ----------------------------------------------------------
+  "Gathered material": "مواد مُجمَّعة",
+  "Requires a research key": "يحتاج مفتاح بحث",
+  "Fetches real material, then writes a brief from it. Every claim keeps the citation it came from, and a citation with no fetched source behind it discards the whole brief.":
+    "يجلب مواد حقيقية ثم يكتب ملخّصًا منها. كل ادّعاء يحتفظ برقم استشهاده، والاستشهاد بلا مصدر مُجلَب يُسقط الملخّص بأكمله.",
+  "Gather new material": "جمع مواد جديدة",
+  Source: "المصدر",
+  "Question or topic": "سؤال أو موضوع",
+  URL: "الرابط",
+  "File under an idea (optional)": "ربطه بفكرة (اختياري)",
+  "General research": "بحث عام",
+  "Gathering…": "جارٍ الجمع…",
+  "Gather sources": "اجمع المصادر",
+  "Loading briefs…": "جارٍ تحميل الملخّصات…",
+  "No briefs yet": "لا توجد ملخّصات بعد",
+  "Gather a source above. A brief only appears once the vendor returned real material and every citation in it passed the source check.":
+    "اجمع مصدرًا من الأعلى. لا يظهر الملخّص إلا بعد أن يعيد المزوّد مواد حقيقية ويجتاز كل استشهاد في فحص المصادر.",
+  Findings: "النتائج",
+  "Sources ({n})": "المصادر ({n})",
+  "What this does not answer": "ما لا يجيب عنه",
+  "Web search": "بحث ويب",
+  "Video transcript": "نصّ فيديو",
+  Page: "صفحة",
+  Transcript: "نصّ مفرَّغ",
+  "Searched through Tavily. Needs TAVILY_API_KEY.":
+    "يبحث عبر Tavily. يحتاج TAVILY_API_KEY.",
+  "Fetched through Supadata. Needs SUPADATA_API_KEY.":
+    "يجلب عبر Supadata. يحتاج SUPADATA_API_KEY.",
+  "Rendered to markdown through Firecrawl. Needs FIRECRAWL_API_KEY.":
+    "يحوّل إلى markdown عبر Firecrawl. يحتاج FIRECRAWL_API_KEY.",
+  "How much does a 10-minute video earn in 2026?":
+    "كم يكسب فيديو بطول ١٠ دقائق في ٢٠٢٦؟",
+  "Enter at least 3 characters.": "اكتب ٣ أحرف على الأقل.",
+  "That must be a full http(s) URL.": "يجب أن يكون رابط http(s) كاملًا.",
+  "Research could not be gathered": "تعذّر جمع البحث",
+  "Brief saved from {n} fetched source(s)":
+    "حُفظ الملخّص من {n} مصدر مُجلَب",
+
   // ---- projects ----------------------------------------------------------
   Context: "السياق",
   "New project": "مشروع جديد",
@@ -685,6 +763,20 @@ export const ar: Record<string, string> = {
   "Routing and verification preferences apply immediately.":
     "تُطبَّق تفضيلات التوجيه والتحقّق فورًا.",
   "Could not save settings": "تعذّر حفظ الإعدادات",
+  Integrations: "التكاملات",
+  "Identifiers this deployment reads at run time. The secrets behind them stay in the Keys tab — these are the public halves.":
+    "مُعرّفات يقرأها هذا التشغيل أثناء العمل. الأسرار خلفها تبقى في تبويب المفاتيح — هذه الأجزاء العلنية فقط.",
+  "YouTube channel id or @handle": "معرّف قناة يوتيوب أو @handle",
+  "UC… or @yourhandle": "UC… أو @yourhandle",
+  "Used by the channel statistics card on Tools. Reading works with an API key; uploading never does.":
+    "يُستخدم في بطاقة إحصائيات القناة في الأدوات. القراءة تعمل بمفتاح API، أما الرفع فلا يفعلها المفتاح أبدًا.",
+  "Tracking spreadsheet id": "معرّف جدول التتبّع",
+  "The id from the sheet's URL. Share it with the service account's client_email as Editor, or the write is refused.":
+    "المعرّف من رابط الجدول. شاركه مع client_email الخاص بحساب الخدمة بصلاحية محرِّر وإلا يُرفض الكتابة.",
+  "Sheet tab (optional)": "تبويب الجدول (اختياري)",
+  A1: "A1",
+  "A named range or A1-style start. Defaults to A1 and writes the header row on the first append.":
+    "نطاق مُسمّى أو بداية بنمط A1. الافتراضي A1، ويُكتب صف العناوين عند أول إضافة.",
   "Model routing, verification policy and the exact tools the agent is allowed to use. Provider credentials live only in the platform Keys tab and never reach this page or the browser.":
     "توجيه النماذج وسياسة التحقّق والأدوات المسموح بها للوكيل. بيانات المزوّد محفوظة في تبويب المفاتيح لا تصل إلى هذه الصفحة ولا إلى المتصفح.",
 

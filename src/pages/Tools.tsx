@@ -1,4 +1,5 @@
 import { StatusPill, type PillTone } from "@/components/app/StatusPill";
+import { ChannelCard } from "@/components/app/ChannelCard";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/convex/_generated/api";
@@ -232,6 +233,8 @@ export default function Tools() {
           </p>
         </div>
       ) : null}
+
+      <ChannelCard />
 
       <div className="flex flex-col gap-3">
         {status.connections.map((tool) => {

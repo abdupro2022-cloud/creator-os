@@ -28,15 +28,20 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 
-const PIPELINE = [
+const PIPELINE: {
+  label: string;
+  icon: typeof Lightbulb;
+  live: boolean;
+  note?: string;
+}[] = [
   { label: "Idea", icon: Lightbulb, live: true },
-  { label: "Research", icon: Search, live: false },
+  { label: "Research", icon: Search, live: true, note: "Needs a research key" },
   { label: "Angle", icon: Compass, live: true },
   { label: "Script", icon: PenLine, live: true },
-  { label: "Shorts", icon: Film, live: false },
-  { label: "SEO", icon: TrendingUp, live: false },
-  { label: "Publish", icon: Rocket, live: false },
-] as const;
+  { label: "Shorts", icon: Film, live: true, note: "Cut plan" },
+  { label: "SEO", icon: TrendingUp, live: true, note: "Metadata kit" },
+  { label: "Publish", icon: Rocket, live: true, note: "No upload" },
+];
 
 const FEATURES = [
   {
@@ -72,9 +77,7 @@ const FEATURES = [
 ] as const;
 
 const ROADMAP = [
-  "Web research, sources and citations",
-  "YouTube research and competitor analysis",
-  "Shorts generation and SEO metadata",
+  "YouTube competitor analysis",
   "Files, PDFs and retrieval",
   "Long-term memory and background tasks",
 ] as const;
@@ -169,6 +172,11 @@ function PipelineStrip() {
             className={stage.live ? "size-3.5 text-primary" : "size-3.5"}
           />
           {t(stage.label)}
+          {stage.live && stage.note ? (
+            <span className="text-[10px] tracking-wide text-muted-foreground uppercase opacity-80">
+              {t(stage.note)}
+            </span>
+          ) : null}
           {!stage.live ? (
             <span className="text-[10px] tracking-wide uppercase opacity-70">
               {t("later")}
@@ -272,7 +280,7 @@ export default function Landing() {
                 </h2>
                 <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
                   {t(
-                    "Version 1 ships idea → angle → script end to end. Everything else is marked as not built, because a plan is not a product.",
+                    "Idea → research → angle → script → publish kit ships end to end. Every stage below is labelled with the exact boundary it has — a plan is not a product.",
                   )}
                 </p>
               </div>

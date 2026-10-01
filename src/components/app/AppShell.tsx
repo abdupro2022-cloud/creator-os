@@ -21,6 +21,7 @@ import {
   Menu,
   Moon,
   Plug,
+  ScanSearch,
   Settings,
   Sun,
   Workflow,
@@ -44,6 +45,7 @@ const EXTRA_TITLES: { test: RegExp; label: string }[] = [
 const NAV: NavItem[] = [
   { to: "/dashboard", label: "Command Center", icon: LayoutDashboard, end: true },
   { to: "/dashboard/ideas", label: "Ideas", icon: Lightbulb },
+  { to: "/dashboard/research", label: "Research", icon: ScanSearch },
   { to: "/dashboard/scripts", label: "Scripts", icon: FileText },
   { to: "/dashboard/projects", label: "Projects", icon: FolderKanban },
   { to: "/dashboard/style", label: "Style Profile", icon: Fingerprint },
@@ -199,7 +201,7 @@ export function AppShell() {
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
               {t(
-                "Idea → Angle → Script → Publish Kit is wired end to end. Research is not built, and nothing is ever uploaded to YouTube.",
+                "Idea → Research → Angle → Script → Publish Kit is wired end to end. Nothing is ever uploaded to YouTube.",
               )}
             </p>
           </div>

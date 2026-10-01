@@ -65,6 +65,11 @@ export const update = mutation({
     routingPreference: v.optional(routingPreferenceValidator),
     extraModelIds: v.optional(v.array(v.string())),
     autoVerify: v.optional(v.boolean()),
+    /** YouTube channel id or @handle, read by `youtube.channelStats`. */
+    youtubeChannelId: v.optional(v.string()),
+    /** Tracking spreadsheet receiving every publish kit row. */
+    trackingSheetId: v.optional(v.string()),
+    trackingSheetTab: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -97,6 +102,20 @@ export const update = mutation({
         .slice(0, 20);
     }
     if (args.autoVerify !== undefined) patch.autoVerify = args.autoVerify;
+    // The three integration fields share one rule: a trimmed empty string
+    // clears the setting, so the creator can un-wire it without a separate
+    // "clear" control.
+    const stringKeys = [
+      "youtubeChannelId",
+      "trackingSheetId",
+      "trackingSheetTab",
+    ] as const;
+    for (const key of stringKeys) {
+      const value = args[key];
+      if (value === undefined) continue;
+      const trimmed = value.trim();
+      patch[key] = trimmed.length > 0 ? trimmed : undefined;
+    }
 
     if (existing) {
       await ctx.db.patch(existing._id, patch);
@@ -110,6 +129,9 @@ export const update = mutation({
       routingPreference: args.routingPreference ?? "balanced",
       extraModelIds: args.extraModelIds ?? [],
       autoVerify: args.autoVerify ?? true,
+      youtubeChannelId: args.youtubeChannelId?.trim() || undefined,
+      trackingSheetId: args.trackingSheetId?.trim() || undefined,
+      trackingSheetTab: args.trackingSheetTab?.trim() || undefined,
       updatedAt: Date.now(),
     });
   },

@@ -21,6 +21,8 @@ import {
   MessageSquareQuote,
   Rocket,
   Scissors,
+  Share2,
+  Table2,
   Trash2,
   Wand2,
 } from "lucide-react";
@@ -120,10 +122,22 @@ export default function PublishKit() {
   );
 
   const generate = useAction(api.agent.publish.generate);
+  const pushToSheet = useAction(api.sheets.appendPublishKit);
+  const tracking = useAction(api.youtube.trackingReadiness);
   const chooseTitle = useMutation(api.publishing.chooseTitle);
   const deletePack = useMutation(api.publishing.deletePack);
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
+  const [pushResult, setPushResult] = useState<{
+    row: number | null;
+    sheetUrl: string | null;
+  } | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [trackingStatus, setTrackingStatus] = useState<{
+    sheetReady: boolean;
+    reason?: string;
+  } | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copy = async (key: string, text: string, what: string) => {
@@ -179,6 +193,41 @@ export default function PublishKit() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  /**
+   * One row into the tracking sheet.
+   *
+   * Deliberately not an upload: the sheet is the creator's own spreadsheet and
+   * this writes a copy of the kit into it. Every failure mode (no spreadsheet
+   * id, unshared credentials, no kit yet) comes back as a sentence rather than
+   * an opaque 403, so it is shown verbatim.
+   */
+  const handlePush = async () => {
+    if (!scriptId) return;
+    setIsPushing(true);
+    try {
+      const result = await pushToSheet({ scriptId });
+      if (!result.ok) {
+        toast.error(t("Could not push to the sheet"), {
+          description: result.error,
+        });
+        return;
+      }
+      setPushResult({ row: result.row, sheetUrl: result.sheetUrl });
+      toast.success(
+        result.row
+          ? t("Pushed to row {row}", { row: result.row })
+          : t("Pushed to the tracking sheet"),
+        { description: result.sheetUrl ?? undefined },
+      );
+    } catch (error) {
+      toast.error(t("Could not push to the sheet"), {
+        description: errorText(error, t("Something went wrong.")),
+      });
+    } finally {
+      setIsPushing(false);
     }
   };
 
@@ -749,6 +798,97 @@ export default function PublishKit() {
                   ))}
                 </ul>
               )}
+            </Panel>
+
+            <Separator />
+
+            <Panel
+              title={t("Tracking sheet")}
+              icon={Table2}
+              action={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={isPushing || pack.status !== "ready"}
+                  onClick={handlePush}
+                >
+                  {isPushing ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Share2 className="size-4" />
+                  )}
+                  {isPushing ? t("Pushing…") : t("Push to sheet")}
+                </Button>
+              }
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {t(
+                    "Writes one row with the title, description, tags, chapter and Shorts counts. Set the spreadsheet id in Settings first, and share that sheet with the service account's client_email as Editor.",
+                  )}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 gap-1.5 text-muted-foreground"
+                  disabled={isChecking}
+                  onClick={async () => {
+                    setIsChecking(true);
+                    try {
+                      setTrackingStatus(await tracking({}));
+                    } catch (error) {
+                      toast.error(t("Could not check the sheet"), {
+                        description: errorText(error, t("Something went wrong.")),
+                      });
+                    } finally {
+                      setIsChecking(false);
+                    }
+                  }}
+                >
+                  {isChecking ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Check className="size-3.5" />
+                  )}
+                  {t("Check setup")}
+                </Button>
+              </div>
+              {trackingStatus ? (
+                trackingStatus.sheetReady ? (
+                  <p className="rounded-lg border border-success/30 bg-success/8 p-2.5 text-xs leading-relaxed text-success">
+                    {t("The tracking sheet is wired up and reachable.")}
+                  </p>
+                ) : (
+                  <p className="rounded-lg border border-warning/35 bg-warning/8 p-2.5 text-xs leading-relaxed text-warning">
+                    {trackingStatus.reason}
+                  </p>
+                )
+              ) : null}
+              {pack.status !== "ready" ? (
+                <p className="text-[11px] text-muted-foreground">
+                  {t("Build the kit before pushing it.")}
+                </p>
+              ) : null}
+              {pushResult ? (
+                <p className="rounded-lg border border-success/30 bg-success/8 p-2.5 text-xs leading-relaxed text-success">
+                  {pushResult.row
+                    ? t("Added as row {row}.", { row: pushResult.row })
+                    : t("Added to the tracking sheet.")}
+                  {pushResult.sheetUrl ? (
+                    <a
+                      href={pushResult.sheetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ms-1.5 underline underline-offset-2"
+                    >
+                      {t("Open the sheet")}
+                    </a>
+                  ) : null}
+                </p>
+              ) : null}
             </Panel>
 
             <Separator />

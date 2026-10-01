@@ -17,6 +17,7 @@ const Landing = lazy(() => import("./pages/Landing.tsx"));
 const AuthPage = lazy(() => import("./pages/Auth.tsx"));
 const CommandCenter = lazy(() => import("./pages/Dashboard.tsx"));
 const Ideas = lazy(() => import("./pages/Ideas.tsx"));
+const Research = lazy(() => import("./pages/Research.tsx"));
 const Scripts = lazy(() => import("./pages/Scripts.tsx"));
 const ScriptStudio = lazy(() => import("./pages/ScriptStudio.tsx"));
 const PublishKit = lazy(() => import("./pages/PublishKit.tsx"));
@@ -210,6 +211,7 @@ createRoot(reactContainer).render(
               >
                 <Route index element={<CommandCenter />} />
                 <Route path="ideas" element={<Ideas />} />
+                <Route path="research" element={<Research />} />
                 <Route path="scripts" element={<Scripts />} />
                 <Route path="scripts/:scriptId" element={<ScriptStudio />} />
                 <Route

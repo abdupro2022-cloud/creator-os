@@ -126,6 +126,7 @@ export default function Dashboard() {
               ideas: overview.pipeline.ideas,
               developed: overview.pipeline.developed,
               capturing: overview.pipeline.captured,
+              research: overview.pipeline.research,
               scripts: overview.pipeline.scripts,
               kits: overview.pipeline.kits,
             }}

@@ -297,7 +297,7 @@ When using convex, make sure:
 # ABDO CREATOR OS — version 1
 
 A personal AI operating system for one solo YouTube creator. Version 1 ships one slice end to end:
-**IDEA → ANGLE → SCRIPT → PUBLISH KIT**, plus the workspace around it.
+**IDEA → RESEARCH → ANGLE → SCRIPT → PUBLISH KIT**, plus the workspace around it.
 
 ## What actually works
 
@@ -311,16 +311,21 @@ A personal AI operating system for one solo YouTube creator. Version 1 ships one
 | Revise | Script Studio | Section editing with debounced autosave, per-section AI rewrite, reordering, add/remove, snapshots and restore, live word count and duration estimate. |
 | Package | Publish Kit | `publish.chapter_plan` derives chapter markers **arithmetically** from the real per-section durations (relaxing to YouTube's 10-second floor when a short video would otherwise produce a list the platform ignores), then one model call writes title options, the description, tags, a pinned comment, a thumbnail brief and the Shorts cuts. `publish.metadata_check` then measures every field against YouTube's real limits and records what needs fixing. |
 | Choose | Publish Kit | The chosen title is stored on the pack, and description / chapters / tags / Shorts copy are one click each. |
+| Gather | Research | A real HTTP call to one of three vendors — Tavily (web search), Supadata (video transcript), Firecrawl (page → markdown) — then one model call writes a brief. `research.citation_check` runs deterministically over the result: a citation no fetched source backs discards the whole brief rather than saving it. Needs the matching key. |
+| Push | Publish Kit | `sheets.appendPublishKit` writes one tracking row (title, description, tags, chapter and Shorts counts) into the creator's own spreadsheet through a service-account JWT. Fails with a sentence, not a 403, when the sheet is unset or unshared. |
+| Read | Tools | `youtube.channelStats` reads public channel and per-upload numbers with a plain API key. Upload readiness reports the three OAuth values instead of showing a button that would fail. |
 
 The **first screen** (Command Center) shows the pipeline with real counts, an inline capture box, ideas
 in progress, recent drafts with progress, style-profile completeness and the real agent run log.
 
 ## Not built (and not stubbed)
 
-Research/sources, YouTube + competitor analysis, files/PDFs, long-term memory, chat threads and
-background tasks. Uploading is deliberately out of scope: the publish kit produces the copy and the
-chapter list, and it never connects to a channel. No placeholder buttons, no fake data, no mock
-dashboards anywhere — the landing page lists what is missing.
+YouTube competitor analysis, files/PDFs, long-term memory, chat threads and background tasks.
+Uploading is deliberately out of scope: the publish kit produces the copy and the chapter list, and
+it never connects to a channel — `youtube.uploadReadiness` reports the missing OAuth values rather
+than faking a button. Research *is* built and wired to a page, but only runs when its vendor key is
+set. No placeholder buttons, no fake data, no mock dashboards anywhere — the landing page lists what
+is missing.
 
 ## Architecture
 

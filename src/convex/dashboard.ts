@@ -12,7 +12,8 @@ export const overview = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
 
-    const [projects, ideas, scripts, packs, runs, profileDoc] = await Promise.all([
+    const [projects, ideas, scripts, packs, runs, profileDoc, researchNotes] =
+      await Promise.all([
       ctx.db
         .query("projects")
         .withIndex("by_owner", (q) => q.eq("ownerId", userId))
@@ -42,6 +43,11 @@ export const overview = query({
         .query("creatorProfiles")
         .withIndex("by_owner", (q) => q.eq("ownerId", userId))
         .first(),
+      ctx.db
+        .query("researchNotes")
+        .withIndex("by_owner_created", (q) => q.eq("ownerId", userId))
+        .order("desc")
+        .take(60),
     ]);
 
     const ideaStatus = (status: string) =>
@@ -117,6 +123,8 @@ export const overview = query({
         developing: ideaStatus("developing"),
         captured: ideaStatus("captured"),
         failedIdeas: ideaStatus("failed"),
+        /** Sourced briefs — one per gather that passed the citation check. */
+        research: researchNotes.length,
         scripts: scripts.length,
         drafting: scriptStatus("drafting"),
         drafts: scriptStatus("draft"),

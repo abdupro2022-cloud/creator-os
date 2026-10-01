@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import {
@@ -60,6 +61,9 @@ export default function SettingsPage() {
   const [verificationModel, setVerificationModel] = useState("");
   const [extraModels, setExtraModels] = useState("");
   const [autoVerify, setAutoVerify] = useState(true);
+  const [youtubeChannelId, setYoutubeChannelId] = useState("");
+  const [trackingSheetId, setTrackingSheetId] = useState("");
+  const [trackingSheetTab, setTrackingSheetTab] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [inventory, setInventory] = useState<{
     ok: boolean;
@@ -78,6 +82,9 @@ export default function SettingsPage() {
     setVerificationModel(settings.verificationModel ?? "");
     setExtraModels(settings.extraModelIds.join("\n"));
     setAutoVerify(settings.autoVerify);
+    setYoutubeChannelId(settings.youtubeChannelId ?? "");
+    setTrackingSheetId(settings.trackingSheetId ?? "");
+    setTrackingSheetTab(settings.trackingSheetTab ?? "");
   }, [settings]);
 
   const catalog = buildModelList(settings?.extraModelIds ?? []);
@@ -96,6 +103,9 @@ export default function SettingsPage() {
           .map((value) => value.trim())
           .filter(Boolean),
         autoVerify,
+        youtubeChannelId,
+        trackingSheetId,
+        trackingSheetTab,
       });
       toast.success(t("Settings saved"), {
         description: t(
@@ -276,6 +286,80 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <Switch checked={autoVerify} onCheckedChange={setAutoVerify} />
+              </div>
+
+              <Separator />
+
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-sm font-semibold tracking-tight">
+                    {t("Integrations")}
+                  </h3>
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {t(
+                      "Identifiers this deployment reads at run time. The secrets behind them stay in the Keys tab — these are the public halves.",
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="youtube-channel-id">
+                    {t("YouTube channel id or @handle")}
+                  </Label>
+                  <Input
+                    id="youtube-channel-id"
+                    value={youtubeChannelId}
+                    dir="ltr"
+                    maxLength={80}
+                    placeholder={t("UC… or @yourhandle")}
+                    onChange={(event) =>
+                      setYoutubeChannelId(event.target.value)
+                    }
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {t(
+                      "Used by the channel statistics card on Tools. Reading works with an API key; uploading never does.",
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="tracking-sheet-id">
+                    {t("Tracking spreadsheet id")}
+                  </Label>
+                  <Input
+                    id="tracking-sheet-id"
+                    value={trackingSheetId}
+                    dir="ltr"
+                    maxLength={200}
+                    placeholder="1AbC…xyz"
+                    onChange={(event) => setTrackingSheetId(event.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {t(
+                      "The id from the sheet's URL. Share it with the service account's client_email as Editor, or the write is refused.",
+                    )}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="tracking-sheet-tab">
+                    {t("Sheet tab (optional)")}
+                  </Label>
+                  <Input
+                    id="tracking-sheet-tab"
+                    value={trackingSheetTab}
+                    dir="ltr"
+                    maxLength={80}
+                    placeholder={t("A1")}
+                    onChange={(event) => setTrackingSheetTab(event.target.value)}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    {t(
+                      "A named range or A1-style start. Defaults to A1 and writes the header row on the first append.",
+                    )}
+                  </p>
+                </div>
               </div>
 
               <Separator />
