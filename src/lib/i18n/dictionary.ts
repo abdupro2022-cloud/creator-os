@@ -489,6 +489,11 @@ export const ar: Record<string, string> = {
     "مراجعات تقنية، تاريخ، تطوير ذات…",
   "What is this channel or series about?": "عمّ تتحدث هذه القناة أو السلسلة؟",
   "Create project": "إنشاء مشروع",
+  Name: "الاسم",
+  "Niche (optional)": "المجال (اختياري)",
+  "Description (optional)": "الوصف (اختياري)",
+  Archive: "أرشفة",
+  "Delete everything": "حذف كل شيء",
 
   // ---- tools -------------------------------------------------------------
   "Tools & connections": "الأدوات والتكاملات",
@@ -670,12 +675,18 @@ export const ar: Record<string, string> = {
   "Tools with EXTERNAL_ACTION or DESTRUCTIVE permission require explicit confirmation; none are registered yet, so no external action can run without your approval.":
     "الأدوات بصلاحية EXTERNAL_ACTION أو DESTRUCTIVE تتطلب تأكيدًا صريحًا؛ لا توجد منها مسجّلة بعد، فلا يمكن تنفيذ أي إجراء خارجي دون موافقتك.",
   "Recent agent runs": "آخر تشغيلات الوكيل",
+  "Not set up yet. Without it, drafts use a neutral voice instead of yours.":
+    "لم يُضبط بعد. بدونه تُكتب المسودّات بصوت محايد بدل صوتك.",
+  "No model calls yet. Developing an idea will show up here with model, latency and token usage.":
+    "لا توجد استدعاءات نماذج بعد. تطوير فكرة سيظهر هنا مع النموذج وزمن الاستجابة واستهلاك الرموز.",
   "No runs yet. Each model call is recorded with its model, latency and token usage.":
     "لا توجد تشغيلات بعد. كل استدعاء نموذج يُسجَّل مع النموذج وزمن الاستجابة واستهلاك الرموز.",
   "Settings saved": "تم حفظ الإعدادات",
   "Routing and verification preferences apply immediately.":
     "تُطبَّق تفضيلات التوجيه والتحقّق فورًا.",
   "Could not save settings": "تعذّر حفظ الإعدادات",
+  "Model routing, verification policy and the exact tools the agent is allowed to use. Provider credentials live only in the platform Keys tab and never reach this page or the browser.":
+    "توجيه النماذج وسياسة التحقّق والأدوات المسموح بها للوكيل. بيانات المزوّد محفوظة في تبويب المفاتيح لا تصل إلى هذه الصفحة ولا إلى المتصفح.",
 
   // ---- registered tools --------------------------------------------------
   "Counts words, sentences and paragraphs and derives a narration duration estimate from the creator's pacing.":
@@ -763,6 +774,7 @@ export const ar: Record<string, string> = {
   Note: "ملاحظة",
   "Idea development": "تطوير الفكرة",
   "Script outline": "مخطّط النص",
+  "Script writing": "كتابة النص",
   "Section writing": "كتابة القسم",
   Verification: "التحقّق",
 };
