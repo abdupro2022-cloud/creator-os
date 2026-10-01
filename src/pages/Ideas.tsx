@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useIdeaWorkflow } from "@/hooks/use-idea-workflow";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatRelativeTime } from "@/lib/script";
 import { useQuery } from "convex/react";
 import { motion } from "framer-motion";
@@ -28,6 +29,7 @@ export default function Ideas() {
   const [filter, setFilter] = useState<Filter>("all");
   const [openIdeaId, setOpenIdeaId] = useState<Id<"ideas"> | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { t } = useI18n();
 
   const filtered = useMemo(() => {
     if (!ideas) return [];
@@ -49,12 +51,13 @@ export default function Ideas() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-          Step 1 · Idea
+          {t("Step 1 · Idea")}
         </p>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Ideas</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t("Ideas")}</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Raw sparks in, developed angles out. Nothing reaches a script until you
-          have reviewed the angle and the points that still need a real source.
+          {t(
+            "Raw sparks in, developed angles out. Nothing reaches a script until you have reviewed the angle and the points that still need a real source.",
+          )}
         </p>
       </header>
 
@@ -68,7 +71,7 @@ export default function Ideas() {
           <TabsList>
             {FILTERS.map((item) => (
               <TabsTrigger key={item.id} value={item.id}>
-                {item.label}
+                {t(item.label)}
               </TabsTrigger>
             ))}
           </TabsList>
@@ -77,19 +80,20 @@ export default function Ideas() {
         {ideas === undefined ? (
           <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Loading ideas…
+            {t("Loading ideas…")}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="surface-panel flex flex-col items-start gap-2 p-6">
+          <div className="surface-panel flex flex-col items-start gap-2 p-6 text-start">
             <Lightbulb className="size-5 text-primary" />
             <p className="text-sm font-medium">
-              {filter === "all"
-                ? "No ideas yet"
-                : "No ideas with this status"}
+              {t(
+                filter === "all" ? "No ideas yet" : "No ideas with this status",
+              )}
             </p>
             <p className="text-sm text-muted-foreground">
-              Write a topic, a question or a problem your audience has. The agent
-              handles the structure.
+              {t(
+                "Write a topic, a question or a problem your audience has. The agent handles the structure.",
+              )}
             </p>
           </div>
         ) : (
@@ -113,7 +117,7 @@ export default function Ideas() {
                 <button
                   type="button"
                   onClick={() => openIdea(idea._id)}
-                  className="flex flex-col gap-1 text-left"
+                  className="flex flex-col gap-1 text-start"
                 >
                   {idea.refined ? (
                     <>
@@ -151,7 +155,7 @@ export default function Ideas() {
                     ) : (
                       <Sparkles className="size-3.5" />
                     )}
-                    {idea.refined ? "Re-develop" : "Develop"}
+                    {t(idea.refined ? "Re-develop" : "Develop")}
                   </Button>
                   <Button
                     type="button"
@@ -165,7 +169,7 @@ export default function Ideas() {
                     ) : (
                       <FileText className="size-3.5" />
                     )}
-                    Draft script
+                    {t("Draft script")}
                   </Button>
                   <Button
                     type="button"
@@ -173,7 +177,7 @@ export default function Ideas() {
                     size="sm"
                     onClick={() => openIdea(idea._id)}
                   >
-                    Details
+                    {t("Details")}
                   </Button>
                 </div>
               </motion.li>

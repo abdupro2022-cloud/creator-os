@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "@/components/app/LanguageToggle";
+import { useI18n } from "@/lib/i18n/provider";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import logo from "@/assets/logo.svg";
@@ -80,6 +82,7 @@ const ROADMAP = [
 function Nav() {
   const { isAuthenticated } = useAuth();
   const { theme, toggle } = useTheme();
+  const { t } = useI18n();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/85 backdrop-blur">
@@ -87,24 +90,27 @@ function Nav() {
         <Link to="/" className="flex items-center gap-2.5">
           <img src={logo} alt="" className="size-8 rounded-lg" />
           <span className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold tracking-tight">
+            <span
+              dir="ltr"
+              className="text-start text-sm font-semibold tracking-tight"
+            >
               ABDO CREATOR OS
             </span>
             <span className="hidden text-[11px] text-muted-foreground sm:block">
-              Personal creator workspace
+              {t("Personal creator workspace")}
             </span>
           </span>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
           <a href="#pipeline" className="transition-colors hover:text-foreground">
-            Pipeline
+            {t("Pipeline")}
           </a>
           <a href="#works" className="transition-colors hover:text-foreground">
-            What works
+            {t("What works")}
           </a>
           <a href="#roadmap" className="transition-colors hover:text-foreground">
-            Roadmap
+            {t("Roadmap")}
           </a>
         </nav>
 
@@ -114,27 +120,28 @@ function Nav() {
             variant="ghost"
             size="icon"
             onClick={toggle}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            aria-label={t(theme === "dark" ? "Switch to light mode" : "Switch to dark mode")}
             className="text-muted-foreground hover:text-foreground"
           >
             {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
           </Button>
+          <LanguageToggle />
           {isAuthenticated ? (
             <Button type="button" size="sm" className="gap-2" asChild>
               <Link to="/dashboard">
                 <LayoutDashboard className="size-4" />
-                Workspace
+                {t("Workspace")}
               </Link>
             </Button>
           ) : (
             <>
               <Button type="button" variant="ghost" size="sm" asChild>
-                <Link to="/auth">Sign in</Link>
+                <Link to="/auth">{t("Sign in")}</Link>
               </Button>
               <Button type="button" size="sm" className="gap-2" asChild>
                 <Link to="/auth">
-                  Get started
-                  <ArrowRight className="size-4" />
+                  {t("Get started")}
+                  <ArrowRight className="size-4 rtl:rotate-180" />
                 </Link>
               </Button>
             </>
@@ -146,6 +153,7 @@ function Nav() {
 }
 
 function PipelineStrip() {
+  const { t } = useI18n();
   return (
     <div className="flex flex-wrap items-center gap-2">
       {PIPELINE.map((stage) => (
@@ -160,10 +168,10 @@ function PipelineStrip() {
           <stage.icon
             className={stage.live ? "size-3.5 text-primary" : "size-3.5"}
           />
-          {stage.label}
+          {t(stage.label)}
           {!stage.live ? (
             <span className="text-[10px] tracking-wide uppercase opacity-70">
-              later
+              {t("later")}
             </span>
           ) : null}
         </span>
@@ -174,6 +182,7 @@ function PipelineStrip() {
 
 export default function Landing() {
   const { isAuthenticated } = useAuth();
+  const { t } = useI18n();
 
   return (
     <motion.div
@@ -200,26 +209,24 @@ export default function Landing() {
             >
               <span className="flex w-fit items-center gap-2 rounded-full border border-border/80 bg-card/60 px-3 py-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                 <Gamepad2 className="size-3.5 text-primary" />
-                Personal AI operating system for one creator
+                {t("Personal AI operating system for one creator")}
               </span>
 
               <h1 className="text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                From a raw idea to a script you can actually film.
+                {t("From a raw idea to a script you can actually film.")}
               </h1>
 
               <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                ABDO CREATOR OS is a working creator workspace, not a chat
-                wrapper. Capture a spark, let the agent develop the angle with
-                every claim labelled, then draft a real script section by
-                section — with word counts, a duration estimate, verification
-                findings and revisions.
+                {t(
+                  "ABDO CREATOR OS is a working creator workspace, not a chat wrapper. Capture a spark, let the agent develop the angle with every claim labelled, then draft a real script section by section — with word counts, a duration estimate, verification findings and revisions.",
+                )}
               </p>
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="button" size="lg" className="gap-2" asChild>
                   <Link to={isAuthenticated ? "/dashboard" : "/auth"}>
-                    {isAuthenticated ? "Open the workspace" : "Start building"}
-                    <ArrowRight className="size-4" />
+                    {t(isAuthenticated ? "Open the workspace" : "Start building")}
+                    <ArrowRight className="size-4 rtl:rotate-180" />
                   </Link>
                 </Button>
                 <Button
@@ -229,7 +236,7 @@ export default function Landing() {
                   className="gap-2"
                   asChild
                 >
-                  <a href="#pipeline">See the pipeline</a>
+                  <a href="#pipeline">{t("See the pipeline")}</a>
                 </Button>
               </div>
 
@@ -243,8 +250,8 @@ export default function Landing() {
                     key={item}
                     className="flex items-center gap-2 text-xs text-muted-foreground"
                   >
-                    <CheckCircle2 className="size-3.5 text-success" />
-                    {item}
+                    <CheckCircle2 className="size-3.5 shrink-0 text-success" />
+                    {t(item)}
                   </li>
                 ))}
               </ul>
@@ -261,11 +268,12 @@ export default function Landing() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                  The pipeline, honestly labelled
+                  {t("The pipeline, honestly labelled")}
                 </h2>
                 <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                  Version 1 ships idea → angle → script end to end. Everything
-                  else is marked as not built, because a plan is not a product.
+                  {t(
+                    "Version 1 ships idea → angle → script end to end. Everything else is marked as not built, because a plan is not a product.",
+                  )}
                 </p>
               </div>
               <PipelineStrip />
@@ -303,10 +311,10 @@ export default function Landing() {
               >
                 <span className="font-mono text-xs text-primary">{item.step}</span>
                 <h3 className="text-base font-semibold tracking-tight">
-                  {item.title}
+                  {t(item.title)}
                 </h3>
                 <p className="text-sm leading-relaxed text-muted-foreground">
-                  {item.body}
+                  {t(item.body)}
                 </p>
               </motion.div>
             ))}
@@ -321,11 +329,12 @@ export default function Landing() {
           <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6 lg:px-8">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
-                What is actually implemented
+                {t("What is actually implemented")}
               </h2>
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                Every item below runs against a real database and real model
-                calls. Nothing on this page is a mock-up.
+                {t(
+                  "Every item below runs against a real database and real model calls. Nothing on this page is a mock-up.",
+                )}
               </p>
             </div>
 
@@ -343,10 +352,10 @@ export default function Landing() {
                     <feature.icon className="size-4 text-primary" />
                   </span>
                   <h3 className="text-sm font-semibold tracking-tight">
-                    {feature.title}
+                    {t(feature.title)}
                   </h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">
-                    {feature.body}
+                    {t(feature.body)}
                   </p>
                 </motion.article>
               ))}
@@ -365,12 +374,12 @@ export default function Landing() {
               className="surface-panel flex flex-col gap-3 p-5"
             >
               <h2 className="text-lg font-semibold tracking-tight">
-                Not built yet — and listed as such
+                {t("Not built yet — and listed as such")}
               </h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                These modules are designed but deliberately excluded from
-                version 1. There are no placeholder buttons and no fake data for
-                them anywhere in the app.
+                {t(
+                  "These modules are designed but deliberately excluded from version 1. There are no placeholder buttons and no fake data for them anywhere in the app.",
+                )}
               </p>
               <ul className="mt-1 flex flex-col gap-2">
                 {ROADMAP.map((item) => (
@@ -378,8 +387,8 @@ export default function Landing() {
                     key={item}
                     className="flex items-center gap-2 text-sm text-muted-foreground"
                   >
-                    <span className="size-1.5 rounded-full bg-muted-foreground/60" />
-                    {item}
+                    <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
+                    {t(item)}
                   </li>
                 ))}
               </ul>
@@ -393,13 +402,17 @@ export default function Landing() {
               className="surface-panel flex flex-col gap-3 p-5"
             >
               <h2 className="text-lg font-semibold tracking-tight">
-                How it is put together
+                {t("How it is put together")}
               </h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                A modular stack, so a new tool or provider is an addition rather
-                than a rewrite.
+                {t(
+                  "A modular stack, so a new tool or provider is an addition rather than a rewrite.",
+                )}
               </p>
-              <pre className="overflow-x-auto rounded-lg border border-border/70 bg-muted/40 p-3 text-[11px] leading-relaxed">
+              <pre
+                dir="ltr"
+                className="overflow-x-auto rounded-lg border border-border/70 bg-muted/40 p-3 text-start text-[11px] leading-relaxed"
+              >
 {`Frontend (Vite + React)
    ↓
 Convex API  ·  queries / mutations / actions
@@ -413,12 +426,13 @@ Database  ·  projects, ideas, scripts, runs`}
               <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2">
                   <Lock className="size-3.5 text-success" />
-                  Keys are read server-side only, in the Convex Node runtime.
+                  {t("Keys are read server-side only, in the Convex Node runtime.")}
                 </li>
                 <li className="flex items-center gap-2">
                   <ScanSearch className="size-3.5 text-success" />
-                  External content is treated as untrusted data, never as
-                  instructions.
+                  {t(
+                    "External content is treated as untrusted data, never as instructions.",
+                  )}
                 </li>
               </ul>
             </motion.div>
@@ -429,12 +443,16 @@ Database  ·  projects, ideas, scripts, runs`}
         <section className="border-t border-border/70 bg-surface/40">
           <div className="mx-auto flex w-full max-w-6xl flex-col items-start gap-4 px-4 py-14 sm:px-6 lg:px-8">
             <h2 className="max-w-2xl text-2xl font-semibold tracking-tight sm:text-3xl">
-              Open the workspace and turn one idea into a script tonight.
+              {t("Open the workspace and turn one idea into a script tonight.")}
             </h2>
             <Button type="button" size="lg" className="gap-2" asChild>
               <Link to={isAuthenticated ? "/dashboard" : "/auth"}>
-                {isAuthenticated ? "Back to the Command Center" : "Create your workspace"}
-                <ArrowRight className="size-4" />
+                {t(
+                  isAuthenticated
+                    ? "Back to the Command Center"
+                    : "Create your workspace",
+                )}
+                <ArrowRight className="size-4 rtl:rotate-180" />
               </Link>
             </Button>
           </div>
@@ -443,9 +461,9 @@ Database  ·  projects, ideas, scripts, runs`}
 
       <footer className="border-t border-border/70">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <span>ABDO CREATOR OS — a personal creator operating system.</span>
+          <span>{t("ABDO CREATOR OS — a personal creator operating system.")}</span>
           <span>
-            Built on Convex, React and a provider-agnostic AI gateway.
+            {t("Built on Convex, React and a provider-agnostic AI gateway.")}
           </span>
         </div>
       </footer>

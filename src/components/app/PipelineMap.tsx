@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import {
   Compass,
@@ -48,6 +49,7 @@ export function PipelineMap({
   activeStage?: string;
   projects?: { _id: string; name: string }[];
 }) {
+  const { t } = useI18n();
   const valueFor = (id: string): number | null => {
     if (id === "idea") return counts.ideas;
     if (id === "angle") return counts.developed;
@@ -62,10 +64,10 @@ export function PipelineMap({
     <div className="surface-panel p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-semibold tracking-tight">
-          Creator pipeline
+          {t("Creator pipeline")}
         </h2>
         <p className="text-[11px] text-muted-foreground">
-          Idea → angle → script → publish kit, end to end. Research is not built.
+          {t("Idea → angle → script → publish kit, end to end. Research is not built.")}
         </p>
       </div>
 
@@ -97,7 +99,7 @@ export function PipelineMap({
                       !stage.live && "text-muted-foreground",
                     )}
                   >
-                    {stage.label}
+                    {t(stage.label)}
                   </span>
                 </span>
                 <span
@@ -109,7 +111,11 @@ export function PipelineMap({
                   {stage.live ? (value ?? 0) : "—"}
                 </span>
                 <span className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                  {stage.live ? ("note" in stage ? stage.note : "Live") : "Not built"}
+                  {stage.live
+                    ? "note" in stage
+                      ? t(stage.note)
+                      : t("Live")
+                    : t("Not built")}
                 </span>
               </div>
               {index < STAGES.length - 1 ? (
@@ -127,7 +133,7 @@ export function PipelineMap({
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
           <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
             <FolderKanban className="size-3.5" />
-            Projects
+            {t("Projects")}
           </span>
           {projects.slice(0, 4).map((project) => (
             <Link
@@ -151,9 +157,9 @@ export function PipelineMap({
           ) : null}
           <Link
             to="/dashboard/projects"
-            className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+            className="ms-auto text-xs text-muted-foreground hover:text-foreground"
           >
-            Manage projects
+            {t("Manage projects")}
           </Link>
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/provider";
 import { Compass, FileText, LayoutDashboard, Lightbulb } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "react-router";
@@ -19,6 +20,7 @@ const ESCAPES = [
 
 export default function NotFound() {
   const location = useLocation();
+  const { t } = useI18n();
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
@@ -26,26 +28,28 @@ export default function NotFound() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="surface-panel flex w-full max-w-md flex-col items-start gap-4 p-6"
+        className="surface-panel flex w-full max-w-md flex-col items-start gap-4 p-6 text-start"
       >
         <span className="flex items-center gap-2 text-primary">
           <Compass className="size-5" />
           <span className="text-[11px] font-semibold tracking-wider uppercase">
-            Page not found
+            {t("Page not found")}
           </span>
         </span>
 
         <div className="flex flex-col gap-1.5">
           <h1 className="text-xl font-bold tracking-tight">
-            That screen does not exist
+            {t("That screen does not exist")}
           </h1>
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Nothing broke — this address simply is not part of the workspace.
-            The page you asked for was not opened.
+            {t(
+              "Nothing broke — this address simply is not part of the workspace. The page you asked for was not opened.",
+            )}
           </p>
         </div>
 
-        <code className="w-full overflow-x-auto rounded-md border border-border bg-muted/50 px-2.5 py-1.5 font-mono text-[11px] text-muted-foreground">
+        <code dir="ltr"
+          className="w-full overflow-x-auto rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-start font-mono text-[11px] text-muted-foreground">
           {location.pathname}
         </code>
 
@@ -60,7 +64,7 @@ export default function NotFound() {
             >
               <Link to={escape.to}>
                 <escape.icon className="size-4" />
-                {escape.label}
+                {t(escape.label)}
               </Link>
             </Button>
           ))}

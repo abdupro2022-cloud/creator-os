@@ -29,6 +29,7 @@ import {
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useIdeaWorkflow } from "@/hooks/use-idea-workflow";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatRelativeTime } from "@/lib/script";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -47,21 +48,22 @@ import { toast } from "sonner";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
   return (
     <Button
       type="button"
       variant="ghost"
       size="icon-sm"
       className="text-muted-foreground hover:text-foreground"
-      aria-label={`Copy ${label}`}
+      aria-label={t("Copy {label}", { label })}
       onClick={async () => {
         try {
           await navigator.clipboard.writeText(value);
           setCopied(true);
-          toast.success(`${label} copied`);
+          toast.success(t("{label} copied", { label }));
           window.setTimeout(() => setCopied(false), 1500);
         } catch {
-          toast.error("Clipboard is not available in this browser.");
+          toast.error(t("Clipboard is not available in this browser."));
         }
       }}
     >
@@ -79,12 +81,13 @@ function Field({
   value: string;
   copy?: boolean;
 }) {
+  const { t } = useI18n();
   if (!value.trim()) return null;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-1">
         <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-          {label}
+          {t(label)}
         </span>
         {copy ? <CopyButton value={value} label={label} /> : null}
       </div>
@@ -108,6 +111,7 @@ export function IdeaDialog({
   const [isEditing, setIsEditing] = useState(false);
   const [draftRaw, setDraftRaw] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const { t } = useI18n();
 
   const idea = data?.idea ?? null;
   const refined = idea?.refined ?? null;
@@ -124,11 +128,13 @@ export function IdeaDialog({
     try {
       await updateRaw({ ideaId, rawInput: draftRaw });
       setIsEditing(false);
-      toast.success("Idea updated", {
-        description: "The previous development was cleared so it cannot go stale.",
+      toast.success(t("Idea updated"), {
+        description: t(
+          "The previous development was cleared so it cannot go stale.",
+        ),
       });
     } catch (error) {
-      toast.error("Could not update the idea", {
+      toast.error(t("Could not update the idea"), {
         description:
           error instanceof Error
             ? error.message.replace(/^Server Error\s*/i, "").slice(0, 300)
@@ -152,35 +158,39 @@ export function IdeaDialog({
             ) : null}
             {idea ? (
               <span className="text-xs text-muted-foreground">
-                Updated {formatRelativeTime(idea.updatedAt)}
+                {t("Updated {when}", {
+                  when: formatRelativeTime(idea.updatedAt),
+                })}
               </span>
             ) : null}
           </div>
           <DialogTitle className="text-lg leading-snug tracking-tight">
-            {refined?.title ?? "Raw idea"}
+            {refined?.title ?? t("Raw idea")}
           </DialogTitle>
           <DialogDescription>
-            {refined
-              ? "Review the angle before drafting. Every key point is labelled, and anything that needs a real source is listed separately."
-              : "This idea has not been developed yet. The agent will turn it into an angle, a hook and labelled key points."}
+            {t(
+              refined
+                ? "Review the angle before drafting. Every key point is labelled, and anything that needs a real source is listed separately."
+                : "This idea has not been developed yet. The agent will turn it into an angle, a hook and labelled key points.",
+            )}
           </DialogDescription>
         </DialogHeader>
 
         {data === undefined ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            Loading idea…
+            {t("Loading idea…")}
           </div>
         ) : data === null || !idea ? (
           <p className="py-6 text-sm text-muted-foreground">
-            This idea no longer exists.
+            {t("This idea no longer exists.")}
           </p>
         ) : (
           <div className="flex flex-col gap-4">
             {idea.errorMessage ? (
               <div className="rounded-lg border border-destructive/30 bg-destructive/8 p-3">
                 <p className="text-xs font-medium text-destructive">
-                  Last run failed
+                  {t("Last run failed")}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed break-words">
                   {idea.errorMessage}
@@ -191,7 +201,7 @@ export function IdeaDialog({
             <div className="rounded-lg border border-border/70 bg-muted/40 p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                  Your spark
+                  {t("Your spark")}
                 </span>
                 {isEditing ? (
                   <div className="flex items-center gap-1">
@@ -199,7 +209,7 @@ export function IdeaDialog({
                       type="button"
                       variant="ghost"
                       size="icon-sm"
-                      aria-label="Cancel editing"
+                      aria-label={t("Cancel editing")}
                       onClick={() => setIsEditing(false)}
                     >
                       <X className="size-3.5" />
@@ -214,7 +224,7 @@ export function IdeaDialog({
                       {isSaving ? (
                         <Loader2 className="size-3.5 animate-spin" />
                       ) : null}
-                      Save
+                      {t("Save")}
                     </Button>
                   </div>
                 ) : (
@@ -222,7 +232,7 @@ export function IdeaDialog({
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    aria-label="Edit the raw idea"
+                    aria-label={t("Edit the raw idea")}
                     onClick={startEditing}
                   >
                     <Pencil className="size-3.5" />
@@ -239,7 +249,7 @@ export function IdeaDialog({
                     disabled={isSaving}
                   />
                   <p className="mt-1 text-[11px] text-warning">
-                    Saving resets the development — re-develop afterwards.
+                    {t("Saving resets the development — re-develop afterwards.")}
                   </p>
                 </>
               ) : (
@@ -260,10 +270,10 @@ export function IdeaDialog({
                     label="Format"
                     value={
                       refined.format === "long_form"
-                        ? "Long form"
+                        ? t("Long form")
                         : refined.format === "short"
-                          ? "Short"
-                          : "Long form + short"
+                          ? t("Short")
+                          : t("Long form + short")
                     }
                   />
                 </div>
@@ -275,7 +285,7 @@ export function IdeaDialog({
 
                 <div className="flex flex-col gap-2">
                   <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                    Key points
+                    {t("Key points")}
                   </span>
                   <ul className="flex flex-col gap-2">
                     {refined.keyPoints.map((point, index) => (
@@ -295,9 +305,9 @@ export function IdeaDialog({
                 {refined.riskNotes.length > 0 ? (
                   <div className="rounded-lg border border-warning/35 bg-warning/8 p-3">
                     <p className="text-xs font-medium text-warning">
-                      Needs a real source before publishing
+                      {t("Needs a real source before publishing")}
                     </p>
-                    <ul className="mt-1.5 flex list-disc flex-col gap-1 pl-4">
+                    <ul className="mt-1.5 flex list-disc flex-col gap-1 ps-4">
                       {refined.riskNotes.map((note, index) => (
                         <li key={`${note.slice(0, 24)}-${index}`} className="text-xs leading-relaxed">
                           {note}
@@ -310,9 +320,9 @@ export function IdeaDialog({
                 {refined.openQuestions.length > 0 ? (
                   <div className="flex flex-col gap-1.5">
                     <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                      Check before filming
+                      {t("Check before filming")}
                     </span>
-                    <ul className="flex list-disc flex-col gap-1 pl-4">
+                    <ul className="flex list-disc flex-col gap-1 ps-4">
                       {refined.openQuestions.map((question, index) => (
                         <li key={`${question.slice(0, 24)}-${index}`} className="text-xs leading-relaxed">
                           {question}
@@ -323,8 +333,10 @@ export function IdeaDialog({
                 ) : null}
 
                 <p className="text-[11px] text-muted-foreground">
-                  Developed with {refined.model} ·{" "}
-                  {formatRelativeTime(refined.generatedAt)}
+                  {t("Developed with {model} · {when}", {
+                    model: refined.model,
+                    when: formatRelativeTime(refined.generatedAt),
+                  })}
                 </p>
               </>
             ) : null}
@@ -332,7 +344,7 @@ export function IdeaDialog({
             {data.linkedScripts.length > 0 ? (
               <div className="flex flex-col gap-2">
                 <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                  Scripts from this idea
+                  {t("Scripts from this idea")}
                 </span>
                 {data.linkedScripts.map((script) => (
                   <Link
@@ -346,7 +358,7 @@ export function IdeaDialog({
                       <span className="truncate">{script.title}</span>
                     </span>
                     <span className="shrink-0 text-xs text-muted-foreground">
-                      {script.wordCount} words
+                      {t("{n} words", { n: script.wordCount })}
                     </span>
                   </Link>
                 ))}
@@ -356,7 +368,7 @@ export function IdeaDialog({
             <Separator />
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                Agent activity
+                {t("Agent activity")}
               </span>
               <LiveRunTrace targetId={ideaId ?? ""} />
             </div>
@@ -373,19 +385,20 @@ export function IdeaDialog({
                 className="gap-2 text-destructive hover:text-destructive"
               >
                 <Trash2 className="size-4" />
-                Delete
+                {t("Delete")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete this idea?</AlertDialogTitle>
+                <AlertDialogTitle>{t("Delete this idea?")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  The raw spark and its developed angle are removed permanently.
-                  Scripts already drafted from it are kept.
+                  {t(
+                    "The raw spark and its developed angle are removed permanently. Scripts already drafted from it are kept.",
+                  )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={async () => {
                     if (!ideaId) return;
@@ -393,7 +406,7 @@ export function IdeaDialog({
                     if (removed) onOpenChange(false);
                   }}
                 >
-                  Delete idea
+                  {t("Delete idea")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -413,7 +426,7 @@ export function IdeaDialog({
               ) : (
                 <Sparkles className="size-4" />
               )}
-              {refined ? "Re-develop" : "Develop with AI"}
+              {t(refined ? "Re-develop" : "Develop with AI")}
             </Button>
             <Button
               type="button"
@@ -427,7 +440,7 @@ export function IdeaDialog({
               ) : (
                 <FileText className="size-4" />
               )}
-              Draft script
+              {t("Draft script")}
             </Button>
           </div>
         </DialogFooter>

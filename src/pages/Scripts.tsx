@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatDuration, formatRelativeTime } from "@/lib/script";
 import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
@@ -38,11 +39,12 @@ export default function Scripts() {
   const [title, setTitle] = useState("");
   const [projectId, setProjectId] = useState<string>("");
   const [isCreating, setIsCreating] = useState(false);
+  const { t } = useI18n();
 
   const submit = async () => {
     const value = title.trim();
     if (value.length < 2) {
-      toast.error("Give the script a title first.");
+      toast.error(t("Give the script a title first."));
       return;
     }
     setIsCreating(true);
@@ -53,12 +55,12 @@ export default function Scripts() {
       });
       setOpen(false);
       setTitle("");
-      toast.success("Script created", {
-        description: "Write it yourself or draft sections with the agent.",
+      toast.success(t("Script created"), {
+        description: t("Write it yourself or draft sections with the agent."),
       });
       navigate(`/dashboard/scripts/${scriptId}`);
     } catch (error) {
-      toast.error("Could not create the script", {
+      toast.error(t("Could not create the script"), {
         description:
           error instanceof Error
             ? error.message.replace(/^Server Error\s*/i, "").slice(0, 300)
@@ -74,14 +76,15 @@ export default function Scripts() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Step 3 · Script
+            {t("Step 3 · Script")}
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-            Script Studio
+            {t("Script Studio")}
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-            Drafts keep real word counts, a narration estimate from your pacing,
-            section-level rewrites, verification findings and revisions.
+            {t(
+              "Drafts keep real word counts, a narration estimate from your pacing, section-level rewrites, verification findings and revisions.",
+            )}
           </p>
         </div>
         <Button
@@ -94,22 +97,23 @@ export default function Scripts() {
           }}
         >
           <Plus className="size-4" />
-          New script
+          {t("New script")}
         </Button>
       </header>
 
       {scripts === undefined ? (
         <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          Loading scripts…
+          {t("Loading scripts…")}
         </div>
       ) : scripts.length === 0 ? (
-        <div className="surface-panel flex flex-col items-start gap-2 p-6">
+        <div className="surface-panel flex flex-col items-start gap-2 p-6 text-start">
           <FileText className="size-5 text-primary" />
-          <p className="text-sm font-medium">No scripts yet</p>
+          <p className="text-sm font-medium">{t("No scripts yet")}</p>
           <p className="text-sm text-muted-foreground">
-            Develop an idea and press “Draft script”, or start one from scratch
-            and write it yourself — the metrics and revisions work either way.
+            {t(
+              "Develop an idea and press “Draft script”, or start one from scratch and write it yourself — the metrics and revisions work either way.",
+            )}
           </p>
           <Button
             type="button"
@@ -120,7 +124,7 @@ export default function Scripts() {
           >
             <Link to="/dashboard/ideas">
               <Sparkles className="size-4" />
-              Go to ideas
+              {t("Go to ideas")}
             </Link>
           </Button>
         </div>
@@ -147,10 +151,12 @@ export default function Scripts() {
                   {script.title}
                 </span>
                 <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <span>{script.wordCount} words</span>
-                  <span>{formatDuration(script.estSeconds)} narration</span>
+                  <span>{t("{n} words", { n: script.wordCount })}</span>
                   <span>
-                    target {formatDuration(script.targetDurationSec)}
+                    {formatDuration(script.estSeconds)} {t("narration")}
+                  </span>
+                  <span>
+                    {t("target")} {formatDuration(script.targetDurationSec)}
                   </span>
                 </span>
                 <div className="mt-auto flex flex-col gap-1.5">
@@ -163,7 +169,8 @@ export default function Scripts() {
                     className="h-1"
                   />
                   <span className="text-[11px] text-muted-foreground">
-                    {script.writtenCount}/{script.sectionCount} sections written
+                    {script.writtenCount}/{script.sectionCount}{" "}
+                    {t("sections written")}
                   </span>
                 </div>
                 {script.errorMessage ? (
@@ -180,29 +187,30 @@ export default function Scripts() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>New script</DialogTitle>
+            <DialogTitle>{t("New script")}</DialogTitle>
             <DialogDescription>
-              Start empty and write it yourself. You can draft individual sections
-              with the agent once it exists.
+              {t(
+                "Start empty and write it yourself. You can draft individual sections with the agent once it exists.",
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="script-title">Title</Label>
+              <Label htmlFor="script-title">{t("Title")}</Label>
               <Input
                 id="script-title"
                 value={title}
                 maxLength={160}
-                placeholder="Working title"
+                placeholder={t("Working title")}
                 onChange={(event) => setTitle(event.target.value)}
               />
             </div>
             {projects && projects.length > 0 ? (
               <div className="flex flex-col gap-1.5">
-                <Label>Project</Label>
+                <Label>{t("Project")}</Label>
                 <Select value={projectId} onValueChange={setProjectId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Project" />
+                    <SelectValue placeholder={t("Project")} />
                   </SelectTrigger>
                   <SelectContent>
                     {projects.map((project) => (
@@ -223,7 +231,7 @@ export default function Scripts() {
               className="gap-2"
             >
               {isCreating ? <Loader2 className="size-4 animate-spin" /> : null}
-              Create script
+              {t("Create script")}
             </Button>
           </DialogFooter>
         </DialogContent>

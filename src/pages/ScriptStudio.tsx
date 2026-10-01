@@ -18,6 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/provider";
 import {
   SECTION_ROLE_ORDER,
   formatDuration,
@@ -44,10 +45,10 @@ import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 
-function errorText(error: unknown): string {
+function errorText(error: unknown, fallback: string): string {
   return error instanceof Error
     ? error.message.replace(/^Server Error\s*/i, "").slice(0, 400)
-    : "Something went wrong.";
+    : fallback;
 }
 
 export default function ScriptStudio() {
@@ -79,6 +80,7 @@ export default function ScriptStudio() {
   const [newRole, setNewRole] = useState<string>("body");
   const [newHeading, setNewHeading] = useState("");
   const [copied, setCopied] = useState(false);
+  const { t } = useI18n();
 
   const script = data?.script ?? null;
   const sections = data?.sections ?? [];
@@ -89,41 +91,48 @@ export default function ScriptStudio() {
       try {
         await updateSection({ sectionId, ...patch });
       } catch (error) {
-        toast.error("Could not save the section", {
-          description: errorText(error),
+        toast.error(t("Could not save the section"), {
+          description: errorText(error, t("Something went wrong.")),
         });
         throw error;
       }
     },
-    [updateSection],
+    [updateSection, t],
   );
 
   const handleDraftMissing = async () => {
     if (!scriptId) return;
     setIsDrafting(true);
     const toastId = toast.loading(
-      "Drafting the remaining sections — watch them fill in live…",
+      t("Drafting the remaining sections — watch them fill in live…"),
     );
     try {
       const result = await draftSections({ scriptId, verify: true });
       if (!result.ok) {
-        toast.error("Drafting failed", {
+        toast.error(t("Drafting failed"), {
           id: toastId,
           description: result.error,
         });
         return;
       }
-      toast.success(`Wrote ${result.sectionsWritten} section(s)`, {
+      toast.success(t("Wrote {n} section(s)", { n: result.sectionsWritten }), {
         id: toastId,
         description:
           result.sectionsFailed > 0
-            ? `${result.sectionsFailed} section(s) still failed — retry or write them yourself.`
+            ? t("{n} section(s) still failed — retry or write them yourself.", {
+                n: result.sectionsFailed,
+              })
             : result.verification?.ok
-              ? `Verification score ${result.verification.score}/100.`
-              : "Verification did not complete.",
+              ? t("Verification score {score}/100.", {
+                  score: result.verification.score,
+                })
+              : t("Verification did not complete."),
       });
     } catch (error) {
-      toast.error("Drafting failed", { id: toastId, description: errorText(error) });
+      toast.error(t("Drafting failed"), {
+        id: toastId,
+        description: errorText(error, t("Something went wrong.")),
+      });
     } finally {
       setIsDrafting(false);
     }
@@ -132,24 +141,27 @@ export default function ScriptStudio() {
   const handleVerify = async () => {
     if (!scriptId) return;
     setIsVerifying(true);
-    const toastId = toast.loading("Verifying — scanning then reviewing…");
+    const toastId = toast.loading(t("Verifying — scanning then reviewing…"));
     try {
       const result = await verifyScript({ scriptId });
       if (result.ok) {
-        toast.success(`Verification complete — ${result.score}/100`, {
-          id: toastId,
-          description: `${result.issues ?? 0} finding(s) recorded.`,
-        });
+        toast.success(
+          t("Verification complete — {score}/100", { score: result.score }),
+          {
+            id: toastId,
+            description: t("{n} finding(s) recorded.", { n: result.issues ?? 0 }),
+          },
+        );
       } else {
-        toast.error("Verification did not complete", {
+        toast.error(t("Verification did not complete"), {
           id: toastId,
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error("Verification failed", {
+      toast.error(t("Verification failed"), {
         id: toastId,
-        description: errorText(error),
+        description: errorText(error, t("Something went wrong.")),
       });
     } finally {
       setIsVerifying(false);
@@ -158,19 +170,24 @@ export default function ScriptStudio() {
 
   const handleRewrite = async (sectionId: Id<"scriptSections">) => {
     setRewritingId(sectionId);
-    const toastId = toast.loading("Rewriting this section…");
+    const toastId = toast.loading(t("Rewriting this section…"));
     try {
       const result = await rewriteSection({ sectionId });
       if (result.ok) {
-        toast.success(`Rewritten with ${result.model}`, { id: toastId });
+        toast.success(t("Rewritten with {model}", { model: result.model }), {
+          id: toastId,
+        });
       } else {
-        toast.error("Rewrite failed", {
+        toast.error(t("Rewrite failed"), {
           id: toastId,
           description: result.error,
         });
       }
     } catch (error) {
-      toast.error("Rewrite failed", { id: toastId, description: errorText(error) });
+      toast.error(t("Rewrite failed"), {
+        id: toastId,
+        description: errorText(error, t("Something went wrong.")),
+      });
     } finally {
       setRewritingId(null);
     }
@@ -180,19 +197,19 @@ export default function ScriptStudio() {
     return (
       <div className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
-        Loading script…
+        {t("Loading script…")}
       </div>
     );
   }
 
   if (!script || !data) {
     return (
-      <div className="surface-panel flex flex-col items-start gap-3 p-6">
-        <p className="text-sm font-medium">This script no longer exists.</p>
+      <div className="surface-panel flex flex-col items-start gap-3 p-6 text-start">
+        <p className="text-sm font-medium">{t("This script no longer exists.")}</p>
         <Button type="button" variant="outline" size="sm" className="gap-2" asChild>
           <Link to="/dashboard/scripts">
-            <ArrowLeft className="size-4" />
-            Back to scripts
+            <ArrowLeft className="size-4 rtl:rotate-180" />
+            {t("Back to scripts")}
           </Link>
         </Button>
       </div>
@@ -216,8 +233,8 @@ export default function ScriptStudio() {
           asChild
         >
           <Link to="/dashboard/scripts">
-            <ArrowLeft className="size-4" />
-            All scripts
+            <ArrowLeft className="size-4 rtl:rotate-180" />
+            {t("All scripts")}
           </Link>
         </Button>
 
@@ -229,7 +246,9 @@ export default function ScriptStudio() {
                 <StatusPill label={data.project.name} tone="neutral" />
               ) : null}
               <span className="text-[11px] text-muted-foreground">
-                Updated {formatRelativeTime(script.updatedAt)}
+                {t("Updated {when}", {
+                  when: formatRelativeTime(script.updatedAt),
+                })}
               </span>
             </div>
             <input
@@ -239,27 +258,29 @@ export default function ScriptStudio() {
                 if (value.length < 2 || value === script.title) return;
                 try {
                   await updateScript({ scriptId: script._id, title: value });
-                  toast.success("Title updated");
+                  toast.success(t("Title updated"));
                 } catch (error) {
-                  toast.error("Could not update the title", {
-                    description: errorText(error),
+                  toast.error(t("Could not update the title"), {
+                    description: errorText(error, t("Something went wrong.")),
                   });
                 }
               }}
               maxLength={160}
-              aria-label="Script title"
+              aria-label={t("Script title")}
               className="w-full rounded-md bg-transparent text-2xl font-bold tracking-tight outline-none focus:bg-muted/40 sm:text-3xl"
             />
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>{script.wordCount} words</span>
-              <span>{formatDuration(script.estSeconds)} narration</span>
+              <span>{t("{n} words", { n: script.wordCount })}</span>
               <span>
-                {script.wordsPerMinute} words/min · target{" "}
-                {formatDuration(script.targetDurationSec)}
+                {formatDuration(script.estSeconds)} {t("narration")}
+              </span>
+              <span>
+                {t("{n} words/min", { n: script.wordsPerMinute })} ·{" "}
+                {t("target")} {formatDuration(script.targetDurationSec)}
               </span>
               <span>
                 {sections.filter((s) => s.status === "written").length}/
-                {sections.length} sections written
+                {sections.length} {t("sections written")}
               </span>
             </div>
           </div>
@@ -273,21 +294,21 @@ export default function ScriptStudio() {
                     scriptId: script._id,
                     targetDurationSec: Number(value) * 60,
                   });
-                  toast.success(`Target set to ${value} minutes`);
+                  toast.success(t("Target set to {n} minutes", { n: value }));
                 } catch (error) {
-                  toast.error("Could not update the target", {
-                    description: errorText(error),
+                  toast.error(t("Could not update the target"), {
+                    description: errorText(error, t("Something went wrong.")),
                   });
                 }
               }}
             >
-              <SelectTrigger size="sm" className="w-36" aria-label="Target length">
+              <SelectTrigger size="sm" className="w-36" aria-label={t("Target length")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {[3, 5, 8, 12, 15, 20].map((minutes) => (
                   <SelectItem key={minutes} value={String(minutes)}>
-                    {minutes} min target
+                    {t("{n} min target", { n: minutes })}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -305,7 +326,7 @@ export default function ScriptStudio() {
               ) : (
                 <ShieldCheck className="size-4" />
               )}
-              Verify
+              {t("Verify")}
             </Button>
             <Button
               type="button"
@@ -320,8 +341,8 @@ export default function ScriptStudio() {
                 <Wand2 className="size-4" />
               )}
               {pending.length === sections.length
-                ? "Draft sections"
-                : `Draft ${pending.length} missing`}
+                ? t("Draft sections")
+                : t("Draft {n} missing", { n: pending.length })}
             </Button>
             <Button
               type="button"
@@ -333,7 +354,7 @@ export default function ScriptStudio() {
             >
               <Link to={`/dashboard/scripts/${script._id}/publish`}>
                 <Rocket className="size-4" />
-                Publish kit
+                {t("Publish kit")}
               </Link>
             </Button>
           </div>
@@ -343,7 +364,7 @@ export default function ScriptStudio() {
       {script.errorMessage ? (
         <div className="rounded-xl border border-destructive/35 bg-destructive/8 p-3">
           <p className="text-xs font-medium text-destructive">
-            The last run did not finish cleanly
+            {t("The last run did not finish cleanly")}
           </p>
           <p className="mt-1 text-xs leading-relaxed break-words">
             {script.errorMessage}
@@ -354,11 +375,12 @@ export default function ScriptStudio() {
       {script.status === "drafting" || isDrafting ? (
         <div className="surface-panel border-primary/30 bg-primary/5 p-4">
           <p className="text-xs font-semibold tracking-wider text-primary uppercase">
-            Agent working
+            {t("Agent working")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Sections appear as they are written. You can keep editing finished
-            sections while this runs.
+            {t(
+              "Sections appear as they are written. You can keep editing finished sections while this runs.",
+            )}
           </p>
           <div className="mt-3">
             <LiveRunTrace targetId={script._id} />
@@ -370,7 +392,7 @@ export default function ScriptStudio() {
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold tracking-tight">
-              Sections ({sections.length})
+              {t("Sections ({n})", { n: sections.length })}
             </h2>
             <Button
               type="button"
@@ -383,7 +405,7 @@ export default function ScriptStudio() {
                     `# ${script.title}\n\n${fullText}`,
                   );
                   setCopied(true);
-                  toast.success("Full script copied");
+                  toast.success(t("Full script copied"));
                   window.setTimeout(() => setCopied(false), 1500);
                 } catch {
                   toast.error("Clipboard is not available in this browser.");
@@ -391,7 +413,7 @@ export default function ScriptStudio() {
               }}
             >
               {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-              Copy script
+              {t("Copy script")}
             </Button>
           </div>
 
@@ -415,18 +437,18 @@ export default function ScriptStudio() {
                     try {
                       await moveSection({ sectionId: section._id, direction });
                     } catch (error) {
-                      toast.error("Could not reorder sections", {
-                        description: errorText(error),
+                      toast.error(t("Could not reorder sections"), {
+                        description: errorText(error, t("Something went wrong.")),
                       });
                     }
                   }}
                   onDelete={async () => {
                     try {
                       await removeSection({ sectionId: section._id });
-                      toast.success("Section removed");
+                      toast.success(t("Section removed"));
                     } catch (error) {
-                      toast.error("Could not remove the section", {
-                        description: errorText(error),
+                      toast.error(t("Could not remove the section"), {
+                        description: errorText(error, t("Something went wrong.")),
                       });
                     }
                   }}
@@ -437,13 +459,13 @@ export default function ScriptStudio() {
 
           <div className="surface-panel flex flex-col gap-2 p-3 sm:flex-row sm:items-center">
             <Select value={newRole} onValueChange={setNewRole}>
-              <SelectTrigger size="sm" className="w-full sm:w-40" aria-label="New section role">
+              <SelectTrigger size="sm" className="w-full sm:w-40" aria-label={t("New section role")}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {SECTION_ROLE_ORDER.map((role) => (
                   <SelectItem key={role} value={role}>
-                    {sectionRoleLabel(role)}
+                    {t(sectionRoleLabel(role))}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -451,7 +473,7 @@ export default function ScriptStudio() {
             <Input
               value={newHeading}
               onChange={(event) => setNewHeading(event.target.value)}
-              placeholder="New section heading"
+              placeholder={t("New section heading")}
               maxLength={160}
               className="h-8 text-sm"
             />
@@ -469,16 +491,16 @@ export default function ScriptStudio() {
                     heading: newHeading.trim(),
                   });
                   setNewHeading("");
-                  toast.success("Section added");
+                  toast.success(t("Section added"));
                 } catch (error) {
-                  toast.error("Could not add the section", {
-                    description: errorText(error),
+                  toast.error(t("Could not add the section"), {
+                    description: errorText(error, t("Something went wrong.")),
                   });
                 }
               }}
             >
               <Plus className="size-4" />
-              Add
+              {t("Add")}
             </Button>
           </div>
         </section>
@@ -487,21 +509,21 @@ export default function ScriptStudio() {
           {/* Idea context */}
           <div className="surface-panel flex flex-col gap-3 p-4">
             <h2 className="text-sm font-semibold tracking-tight">
-              Where this came from
+              {t("Where this came from")}
             </h2>
             {data.idea ? (
               <>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  {data.idea.rawInput}
+                  <span dir="auto">{data.idea.rawInput}</span>
                 </p>
                 {data.idea.refined ? (
                   <>
                     <Separator />
                     <div className="flex flex-col gap-1">
                       <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                        Angle
+                        {t("Angle")}
                       </span>
-                      <p className="text-xs leading-relaxed">
+                      <p dir="auto" className="text-xs leading-relaxed">
                         {data.idea.refined.angle}
                       </p>
                     </div>
@@ -510,15 +532,15 @@ export default function ScriptStudio() {
                         Hook
                         <button
                           type="button"
-                          aria-label="Copy hook"
+                          aria-label={t("Copy hook")}
                           onClick={async () => {
                             try {
                               await navigator.clipboard.writeText(
                                 data.idea?.refined?.hook ?? "",
                               );
-                              toast.success("Hook copied");
+                              toast.success(t("Hook copied"));
                             } catch {
-                              toast.error("Clipboard unavailable.");
+                              toast.error(t("Clipboard unavailable."));
                             }
                           }}
                           className="text-muted-foreground transition-colors hover:text-foreground"
@@ -545,15 +567,18 @@ export default function ScriptStudio() {
                       className="w-fit gap-1.5"
                       asChild
                     >
-                      <Link to="/dashboard/ideas">Open the idea</Link>
+                      <Link to="/dashboard/ideas">
+                        {t("Open the idea")}
+                      </Link>
                     </Button>
                   </>
                 ) : null}
               </>
             ) : (
               <p className="text-xs text-muted-foreground">
-                This script was started manually, so there is no source idea
-                attached. Metrics and revisions still work.
+                {t(
+                  "This script was started manually, so there is no source idea attached. Metrics and revisions still work.",
+                )}
               </p>
             )}
           </div>
@@ -562,7 +587,7 @@ export default function ScriptStudio() {
           <div className="surface-panel flex flex-col gap-3 p-4">
             <div className="flex items-center justify-between gap-2">
               <h2 className="text-sm font-semibold tracking-tight">
-                Verification
+                {t("Verification")}
               </h2>
               {script.verification ? (
                 <span className="text-sm font-semibold">
@@ -577,7 +602,7 @@ export default function ScriptStudio() {
                   {script.verification.summary}
                 </p>
                 <span className="text-[11px] text-muted-foreground">
-                  {script.verification.model} ·{" "}
+                  <span dir="ltr">{script.verification.model}</span> ·{" "}
                   {formatRelativeTime(script.verification.checkedAt)}
                 </span>
                 {script.verification.issues.length > 0 ? (
@@ -598,7 +623,7 @@ export default function ScriptStudio() {
                         </span>
                         {sectionTitle(issue.sectionId) ? (
                           <span className="text-[10px] text-muted-foreground">
-                            Section: {sectionTitle(issue.sectionId)}
+                            {t("Section")}: {sectionTitle(issue.sectionId)}
                           </span>
                         ) : null}
                       </li>
@@ -606,15 +631,15 @@ export default function ScriptStudio() {
                   </ul>
                 ) : (
                   <p className="text-xs text-success">
-                    No findings — nothing was flagged.
+                    {t("No findings — nothing was flagged.")}
                   </p>
                 )}
               </>
             ) : (
               <p className="text-xs text-muted-foreground">
-                Not verified yet. Verification runs a deterministic scan
-                (structure, prohibited style, unsourced evidence claims) and then
-                a model review pass.
+                {t(
+                  "Not verified yet. Verification runs a deterministic scan (structure, prohibited style, unsourced evidence claims) and then a model review pass.",
+                )}
               </p>
             )}
           </div>
@@ -624,7 +649,7 @@ export default function ScriptStudio() {
             <div className="flex items-center justify-between gap-2">
               <h2 className="flex items-center gap-1.5 text-sm font-semibold tracking-tight">
                 <History className="size-4 text-muted-foreground" />
-                Revisions
+                {t("Revisions")}
               </h2>
               <Button
                 type="button"
@@ -634,23 +659,24 @@ export default function ScriptStudio() {
                   try {
                     await saveRevision({
                       scriptId: script._id,
-                      reason: "Manual save from Script Studio",
+                      reason: t("Manual save from Script Studio"),
                     });
-                    toast.success("Revision saved");
+                    toast.success(t("Revision saved"));
                   } catch (error) {
-                    toast.error("Could not save a revision", {
-                      description: errorText(error),
+                    toast.error(t("Could not save a revision"), {
+                      description: errorText(error, t("Something went wrong.")),
                     });
                   }
                 }}
               >
-                Save revision
+                {t("Save revision")}
               </Button>
             </div>
             {data.revisions.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No revisions yet. Snapshots let you roll a draft back after a
-                rewrite.
+                {t(
+                  "No revisions yet. Snapshots let you roll a draft back after a rewrite.",
+                )}
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
@@ -662,7 +688,7 @@ export default function ScriptStudio() {
                     <span className="flex items-center justify-between gap-2">
                       <span className="text-xs font-medium">{revision.label}</span>
                       <span className="text-[10px] text-muted-foreground">
-                        {revision.wordCount} words
+                        {t("{n} words", { n: revision.wordCount })}
                       </span>
                     </span>
                     <span className="text-[11px] text-muted-foreground">
@@ -677,16 +703,16 @@ export default function ScriptStudio() {
                         onClick={async () => {
                           try {
                             await restoreRevision({ revisionId: revision._id });
-                            toast.success("Revision restored");
+                            toast.success(t("Revision restored"));
                           } catch (error) {
-                            toast.error("Could not restore the revision", {
-                              description: errorText(error),
+                            toast.error(t("Could not restore the revision"), {
+                              description: errorText(error, t("Something went wrong.")),
                             });
                           }
                         }}
                       >
                         <RotateCcw className="size-3" />
-                        Restore
+                        {t("Restore")}
                       </Button>
                       <Button
                         type="button"
@@ -696,16 +722,16 @@ export default function ScriptStudio() {
                         onClick={async () => {
                           try {
                             await deleteRevision({ revisionId: revision._id });
-                            toast.success("Revision deleted");
+                            toast.success(t("Revision deleted"));
                           } catch (error) {
-                            toast.error("Could not delete the revision", {
-                              description: errorText(error),
+                            toast.error(t("Could not delete the revision"), {
+                              description: errorText(error, t("Something went wrong.")),
                             });
                           }
                         }}
                       >
                         <Trash2 className="size-3" />
-                        Delete
+                        {t("Delete")}
                       </Button>
                     </span>
                   </li>
@@ -715,9 +741,11 @@ export default function ScriptStudio() {
           </div>
 
           <div className="surface-panel flex flex-col gap-2 p-4">
-            <h2 className="text-sm font-semibold tracking-tight">Danger zone</h2>
+            <h2 className="text-sm font-semibold tracking-tight">
+              {t("Danger zone")}
+            </h2>
             <p className="text-xs text-muted-foreground">
-              Deleting removes the script, its sections and all revisions.
+              {t("Deleting removes the script, its sections and all revisions.")}
             </p>
             <Button
               type="button"
@@ -727,17 +755,17 @@ export default function ScriptStudio() {
               onClick={async () => {
                 try {
                   await deleteScript({ scriptId: script._id });
-                  toast.success("Script deleted");
+                  toast.success(t("Script deleted"));
                   navigate("/dashboard/scripts");
                 } catch (error) {
-                  toast.error("Could not delete the script", {
-                    description: errorText(error),
+                  toast.error(t("Could not delete the script"), {
+                    description: errorText(error, t("Something went wrong.")),
                   });
                 }
               }}
             >
               <Trash2 className="size-4" />
-              Delete script
+              {t("Delete script")}
             </Button>
           </div>
         </aside>

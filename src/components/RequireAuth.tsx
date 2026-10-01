@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n/provider";
 import { Loader2, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
@@ -38,6 +39,7 @@ export function RequireAuth({
   const { isLoading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useI18n();
 
   if (isLoading) {
     return (
@@ -64,22 +66,22 @@ export function RequireAuth({
                 <Lock className="size-5 text-muted-foreground" />
               </div>
             </div>
-            <CardTitle className="text-xl">{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+            <CardTitle className="text-xl">{t(title)}</CardTitle>
+            <CardDescription>{t(description)}</CardDescription>
           </CardHeader>
           <CardContent className="text-center text-sm text-muted-foreground">
-            You'll come straight back to this page once you're signed in.
+            {t("You'll come straight back to this page once you're signed in.")}
           </CardContent>
           <CardFooter className="flex flex-col gap-2">
             <Button className="w-full" onClick={() => navigate(signInHref)}>
-              Sign in
+              {t("Sign in")}
             </Button>
             <Button
               variant="ghost"
               className="w-full"
               onClick={() => navigate("/")}
             >
-              Back to home
+              {t("Back to home")}
             </Button>
           </CardFooter>
         </Card>

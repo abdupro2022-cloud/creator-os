@@ -2,6 +2,7 @@ import { StatusPill, type PillTone } from "@/components/app/StatusPill";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/convex/_generated/api";
+import { useT } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { useAction } from "convex/react";
 import {
@@ -59,13 +60,14 @@ interface TestState {
   testing: boolean;
 }
 
-function errorText(error: unknown): string {
+function errorText(error: unknown, fallback: string): string {
   return error instanceof Error
     ? error.message.replace(/^Server Error\s*/i, "").slice(0, 300)
-    : "Something went wrong.";
+    : fallback;
 }
 
 export default function Tools() {
+  const t = useT();
   const fetchStatus = useAction(api.integrations.status);
   const test = useAction(api.integrations.test);
 
@@ -88,12 +90,12 @@ export default function Tools() {
         connections: [],
         configured: 0,
         total: 0,
-        error: errorText(error),
+        error: errorText(error, t("Something went wrong.")),
       });
     } finally {
       setLoading(false);
     }
-  }, [fetchStatus]);
+  }, [fetchStatus, t]);
 
   useEffect(() => {
     void load();
@@ -103,13 +105,15 @@ export default function Tools() {
     try {
       await navigator.clipboard.writeText(envVar);
       setCopied(envVar);
-      toast.success(`${envVar} copied — paste it in the Keys tab`);
+      toast.success(
+        t("{var} copied — paste it in the Keys tab", { var: envVar }),
+      );
       window.setTimeout(
         () => setCopied((current) => (current === envVar ? null : current)),
         1500,
       );
     } catch {
-      toast.error("Clipboard is not available in this browser.");
+      toast.error(t("Clipboard is not available in this browser."));
     }
   };
 
@@ -130,7 +134,9 @@ export default function Tools() {
         },
       }));
       toast[result.ok ? "success" : "error"](
-        result.ok ? `${label} responded` : `${label} did not pass`,
+        result.ok
+          ? t("{label} responded", { label })
+          : t("{label} did not pass", { label }),
         { description: result.detail },
       );
     } catch (error) {
@@ -139,11 +145,13 @@ export default function Tools() {
         [id]: {
           status: null,
           ok: false,
-          detail: errorText(error),
+          detail: errorText(error, t("Something went wrong.")),
           testing: false,
         },
       }));
-      toast.error(`${label} test failed`, { description: errorText(error) });
+      toast.error(t("{label} test failed", { label }), {
+        description: errorText(error, t("Something went wrong.")),
+      });
     }
   };
 
@@ -151,7 +159,7 @@ export default function Tools() {
     return (
       <div className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
-        Checking your connections…
+        {t("Checking your connections…")}
       </div>
     );
   }
@@ -159,12 +167,14 @@ export default function Tools() {
   if (!status || !status.ok) {
     return (
       <div className="surface-panel flex flex-col items-start gap-3 p-6">
-        <p className="text-sm font-medium">Connections unavailable</p>
+        <p className="text-sm font-medium">
+          {t("Connections unavailable")}
+        </p>
         <p className="text-xs text-muted-foreground">
-          {status?.error ?? "Sign in again and reload."}
+          {status?.error ?? t("Sign in again and reload.")}
         </p>
         <Button type="button" variant="outline" size="sm" onClick={load}>
-          Try again
+          {t("Try again")}
         </Button>
       </div>
     );
@@ -178,21 +188,23 @@ export default function Tools() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
-            <StatusPill label="Tools" tone="accent" />
+            <StatusPill label={t("Tools")} tone="accent" />
             <StatusPill
-              label={`${status.configured} of ${status.total} keys present`}
+              label={t("{configured} of {total} keys present", {
+                configured: status.configured,
+                total: status.total,
+              })}
               tone={status.configured === status.total ? "success" : "warning"}
               dot
             />
           </div>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Tools &amp; connections
+            {t("Tools & connections")}
           </h1>
           <p className="max-w-prose text-sm leading-relaxed text-muted-foreground">
-            Keys are stored in this project's environment, never in the code
-            and never in your browser. This page only tells you whether a key is
-            present, and — for most of them — whether the vendor actually
-            accepts it.
+            {t(
+              "Keys are stored in this project's environment, never in the code and never in your browser. This page only tells you whether a key is present, and — for most of them — whether the vendor actually accepts it.",
+            )}
           </p>
         </div>
       </div>
@@ -200,15 +212,12 @@ export default function Tools() {
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
         <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
           <ShieldCheck className="size-3.5" />
-          How to add a key
+          {t("How to add a key")}
         </p>
-        <ol className="mt-1.5 flex list-decimal flex-col gap-1 pl-4 text-xs leading-relaxed text-muted-foreground">
-          <li>Copy the variable name shown under the tool you want.</li>
-          <li>
-            Open this project's <span className="text-foreground">Keys</span> tab
-            and add it as a new key with exactly that name.
-          </li>
-          <li>Come back here and press “Test” — it calls the real API.</li>
+        <ol className="mt-1.5 flex list-decimal flex-col gap-1 ps-4 text-xs leading-relaxed text-muted-foreground">
+          <li>{t("Copy the variable name shown under the tool you want.")}</li>
+          <li>{t("Open this project's Keys tab and add it as a new key with exactly that name.")}</li>
+          <li>{t("Come back here and press “Test” — it calls the real API.")}</li>
         </ol>
       </div>
 
@@ -216,7 +225,7 @@ export default function Tools() {
         <div className="rounded-xl border border-warning/35 bg-warning/5 p-3">
           <p className="flex items-center gap-1.5 text-xs font-medium text-warning">
             <AlertTriangle className="size-3.5" />
-            {missing.length} key(s) not added yet
+            {t("{n} key(s) not added yet", { n: missing.length })}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {missing.map((tool) => tool.envVar).join(" · ")}
@@ -253,22 +262,24 @@ export default function Tools() {
                       {tool.label}
                     </h2>
                     {tool.oauth ? (
-                      <StatusPill label="Service account" tone="info" />
+                      <StatusPill label={t("Service account")} tone="info" />
                     ) : null}
                     <StatusPill
-                      label={tool.configured ? "Key present" : "No key"}
+                      label={
+                        tool.configured ? t("Key present") : t("No key")
+                      }
                       tone={tool.configured ? "success" : "neutral"}
                       dot
                     />
                     {tool.configured && result && !result.testing ? (
                       <StatusPill
-                        label={result.ok ? "Test passed" : "Test failed"}
+                        label={result.ok ? t("Test passed") : t("Test failed")}
                         tone={tone}
                       />
                     ) : null}
                   </div>
                   <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
-                    {tool.purpose}
+                    {t(tool.purpose)}
                   </p>
                 </div>
 
@@ -285,7 +296,7 @@ export default function Tools() {
                   ) : (
                     <KeyRound className="size-4" />
                   )}
-                  {result?.testing ? "Testing" : "Test"}
+                  {result?.testing ? t("Testing") : t("Test")}
                 </Button>
               </div>
 
@@ -294,13 +305,19 @@ export default function Tools() {
               <div className="flex flex-col gap-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[11px] tracking-wide text-muted-foreground uppercase">
-                    Variable
+                    {t("Variable")}
                   </span>
-                  <code className="rounded-md border border-border bg-muted/50 px-2 py-1 font-mono text-xs">
+                  <code
+                    dir="ltr"
+                    className="rounded-md border border-border bg-muted/50 px-2 py-1 font-mono text-xs"
+                  >
                     {tool.envVar}
                   </code>
                   {tool.hint ? (
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <span
+                      dir="ltr"
+                      className="font-mono text-xs text-muted-foreground"
+                    >
                       {tool.hint}
                     </span>
                   ) : null}
@@ -316,16 +333,17 @@ export default function Tools() {
                     ) : (
                       <Copy className="size-3.5" />
                     )}
-                    Copy
+                    {t("Copy")}
                   </Button>
                 </div>
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  {tool.how}
+                  {t(tool.how)}
                 </p>
                 {!tool.testable && tool.configured ? (
                   <p className="text-[11px] text-muted-foreground">
-                    No cheap test endpoint for this one, so “Test” only confirms
-                    the key is present.
+                    {t(
+                      "No cheap test endpoint for this one, so “Test” only confirms the key is present.",
+                    )}
                   </p>
                 ) : null}
                 {result ? (
@@ -347,8 +365,12 @@ export default function Tools() {
                       <XCircle className="mt-0.5 size-3.5 shrink-0" />
                     )}
                     <span>
-                      {result.detail}
-                      {result.status ? ` (HTTP ${result.status})` : ""}
+                      <bdi>{result.detail}</bdi>
+                      {result.status ? (
+                        <bdi>{` (HTTP ${result.status})`}</bdi>
+                      ) : (
+                        ""
+                      )}
                     </span>
                   </p>
                 ) : null}
@@ -360,9 +382,9 @@ export default function Tools() {
 
       {ready.length > 0 ? (
         <p className="text-[11px] leading-relaxed text-muted-foreground">
-          A key being present is not the same as a tool being in use. These are
-          not connected to the pipeline yet — each one still needs the feature
-          that calls it.
+          {t(
+            "A key being present is not the same as a tool being in use. These are not connected to the pipeline yet — each one still needs the feature that calls it.",
+          )}
         </p>
       ) : null}
     </div>

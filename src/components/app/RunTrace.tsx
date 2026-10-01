@@ -1,4 +1,5 @@
 import { api } from "@/convex/_generated/api";
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/script";
 import { useQuery } from "convex/react";
@@ -55,6 +56,7 @@ export function RunTrace({
   className?: string;
   showMeta?: boolean;
 }) {
+  const { t } = useI18n();
   const meta = runStatusMeta(run.status);
   const failedCandidates = run.candidates.filter((candidate) => !candidate.ok);
 
@@ -84,7 +86,7 @@ export function RunTrace({
                 <StepIcon status={step.status} />
               </span>
               <span className="flex min-w-0 flex-col">
-                <span className="text-xs font-medium">{step.label}</span>
+                <span className="text-xs font-medium">{t(step.label)}</span>
                 {step.detail ? (
                   <span className="text-xs leading-relaxed text-muted-foreground break-words">
                     {step.detail}
@@ -95,18 +97,26 @@ export function RunTrace({
           ))}
         </ol>
       ) : (
-        <p className="text-xs text-muted-foreground">Waiting for the first step…</p>
+        <p className="text-xs text-muted-foreground">
+          {t("Waiting for the first step…")}
+        </p>
       )}
 
       {showMeta ? (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          {run.model ? <span>Model: {run.model}</span> : null}
+          {run.model ? (
+            <span>
+              {t("Model")}: <span dir="ltr">{run.model}</span>
+            </span>
+          ) : null}
           {run.latencyMs > 0 ? (
-            <span>Latency: {(run.latencyMs / 1000).toFixed(1)}s</span>
+            <span>
+              {t("Latency")}: {(run.latencyMs / 1000).toFixed(1)}s
+            </span>
           ) : null}
           {run.promptTokens + run.completionTokens > 0 ? (
             <span>
-              Tokens: {run.promptTokens + run.completionTokens} in /{" "}
+              {t("Tokens")}: {run.promptTokens + run.completionTokens} in /{" "}
               {run.completionTokens} out
             </span>
           ) : null}
@@ -116,7 +126,7 @@ export function RunTrace({
       {failedCandidates.length > 0 ? (
         <div className="rounded-lg border border-warning/30 bg-warning/8 p-2.5">
           <p className="text-xs font-medium text-warning">
-            Provider fallback used
+            {t("Provider fallback used")}
           </p>
           <ul className="mt-1 flex flex-col gap-1">
             {failedCandidates.map((candidate) => (
@@ -124,10 +134,10 @@ export function RunTrace({
                 key={candidate.model}
                 className="text-xs text-muted-foreground break-words"
               >
-                <span className="font-medium text-foreground">
+                <span dir="ltr" className="font-medium text-foreground">
                   {candidate.model}
                 </span>{" "}
-                — {candidate.error ?? "unavailable"}
+                — {candidate.error ?? t("unavailable")}
               </li>
             ))}
           </ul>
@@ -153,12 +163,13 @@ export function LiveRunTrace({
   className?: string;
 }) {
   const run = useQuery(api.runs.latestForTarget, { targetId });
+  const { t } = useI18n();
 
   if (run === undefined) {
     return (
       <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", className)}>
         <Loader2 className="size-3.5 animate-spin" />
-        Loading run…
+        {t("Loading run…")}
       </div>
     );
   }

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useT } from "@/lib/i18n/provider";
 import { formatRelativeTime } from "@/lib/script";
 import { useMutation, useQuery } from "convex/react";
 import { motion } from "framer-motion";
@@ -46,13 +47,14 @@ interface FormState {
 
 const EMPTY_FORM: FormState = { name: "", niche: "", description: "" };
 
-function errorText(error: unknown): string {
+function errorText(error: unknown, fallback: string): string {
   return error instanceof Error
     ? error.message.replace(/^Server Error\s*/i, "").slice(0, 300)
-    : "Something went wrong.";
+    : fallback;
 }
 
 export default function Projects() {
+  const t = useT();
   const projects = useQuery(api.projects.list, {});
   const createProject = useMutation(api.projects.create);
   const updateProject = useMutation(api.projects.update);
@@ -66,7 +68,7 @@ export default function Projects() {
   const submit = async () => {
     const name = form.name.trim();
     if (name.length < 2) {
-      toast.error("Give the project a name with at least 2 characters.");
+      toast.error(t("Give the project a name with at least 2 characters."));
       return;
     }
     setIsSaving(true);
@@ -78,22 +80,24 @@ export default function Projects() {
           niche: form.niche,
           description: form.description,
         });
-        toast.success("Project updated");
+        toast.success(t("Project updated"));
       } else {
         await createProject({
           name,
           niche: form.niche,
           description: form.description,
         });
-        toast.success("Project created", {
-          description: "Ideas and scripts stay scoped to this project.",
+        toast.success(t("Project created"), {
+          description: t("Ideas and scripts stay scoped to this project."),
         });
       }
       setOpen(false);
       setForm(EMPTY_FORM);
       setEditingId(null);
     } catch (error) {
-      toast.error("Could not save the project", { description: errorText(error) });
+      toast.error(t("Could not save the project"), {
+        description: errorText(error, t("Something went wrong.")),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -104,14 +108,15 @@ export default function Projects() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Context
+            {t("Context")}
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-            Projects
+            {t("Projects")}
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-            A project is a context boundary. Ideas, scripts, runs and style stay
-            scoped to it, so two channels never bleed into each other.
+            {t(
+              "A project is a context boundary. Ideas, scripts, runs and style stay scoped to it, so two channels never bleed into each other.",
+            )}
           </p>
         </div>
         <Button
@@ -125,22 +130,23 @@ export default function Projects() {
           }}
         >
           <Plus className="size-4" />
-          New project
+          {t("New project")}
         </Button>
       </header>
 
       {projects === undefined ? (
         <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          Loading projects…
+          {t("Loading projects…")}
         </div>
       ) : projects.length === 0 ? (
         <div className="surface-panel flex flex-col items-start gap-2 p-6">
           <FolderKanban className="size-5 text-primary" />
-          <p className="text-sm font-medium">No projects yet</p>
+          <p className="text-sm font-medium">{t("No projects yet")}</p>
           <p className="text-sm text-muted-foreground">
-            One is created automatically the first time you capture an idea, but
-            you can split work by channel, series or client at any time.
+            {t(
+              "One is created automatically the first time you capture an idea, but you can split work by channel, series or client at any time.",
+            )}
           </p>
         </div>
       ) : (
@@ -179,9 +185,13 @@ export default function Projects() {
               </div>
 
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>{project.ideaCount} ideas</span>
-                <span>{project.developedCount} developed</span>
-                <span>{project.scriptCount} scripts</span>
+                <span>{t("{n} ideas", { n: project.ideaCount })}</span>
+                <span>
+                  {t("{n} developed", { n: project.developedCount })}
+                </span>
+                <span>
+                  {t("{n} scripts", { n: project.scriptCount })}
+                </span>
               </div>
 
               <div className="mt-auto flex flex-wrap gap-2">
@@ -199,7 +209,7 @@ export default function Projects() {
                     setOpen(true);
                   }}
                 >
-                  Edit
+                  {t("Edit")}
                 </Button>
                 <Button
                   type="button"
@@ -213,11 +223,13 @@ export default function Projects() {
                         archived: !project.archived,
                       });
                       toast.success(
-                        project.archived ? "Project restored" : "Project archived",
+                        project.archived
+                          ? t("Project restored")
+                          : t("Project archived"),
                       );
                     } catch (error) {
-                      toast.error("Could not update the project", {
-                        description: errorText(error),
+                      toast.error(t("Could not update the project"), {
+                        description: errorText(error, t("Something went wrong.")),
                       });
                     }
                   }}
@@ -227,7 +239,7 @@ export default function Projects() {
                   ) : (
                     <Archive className="size-4" />
                   )}
-                  {project.archived ? "Restore" : "Archive"}
+                  {project.archived ? t("Restore") : t("Archive")}
                 </Button>
 
                 <AlertDialog>
@@ -239,36 +251,44 @@ export default function Projects() {
                       className="gap-1.5 text-destructive hover:text-destructive"
                     >
                       <Trash2 className="size-4" />
-                      Delete
+                      {t("Delete")}
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        Delete “{project.name}”?
+                        {t("Delete “{name}”?", { name: project.name })}
                       </AlertDialogTitle>
                       <AlertDialogDescription>
-                        This permanently deletes the project plus{" "}
-                        {project.ideaCount} idea(s) and {project.scriptCount}{" "}
-                        script(s) inside it, including their sections and
-                        revisions. It cannot be undone.
+                        {t(
+                          "This permanently deletes the project plus {ideas} idea(s) and {scripts} script(s) inside it, including their sections and revisions. It cannot be undone.",
+                          {
+                            ideas: project.ideaCount,
+                            scripts: project.scriptCount,
+                          },
+                        )}
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel>
+                        {t("Cancel")}
+                      </AlertDialogCancel>
                       <AlertDialogAction
                         onClick={async () => {
                           try {
                             await removeProject({ projectId: project._id });
-                            toast.success("Project deleted");
+                            toast.success(t("Project deleted"));
                           } catch (error) {
-                            toast.error("Could not delete the project", {
-                              description: errorText(error),
+                            toast.error(t("Could not delete the project"), {
+                              description: errorText(
+                                error,
+                                t("Something went wrong."),
+                              ),
                             });
                           }
                         }}
                       >
-                        Delete everything
+                        {t("Delete everything")}
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
@@ -283,47 +303,52 @@ export default function Projects() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? "Edit project" : "New project"}
+              {editingId ? t("Edit project") : t("New project")}
             </DialogTitle>
             <DialogDescription>
-              Keep one project per channel, series or client so context never
-              mixes.
+              {t(
+                "Keep one project per channel, series or client so context never mixes.",
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="project-name">Name</Label>
+              <Label htmlFor="project-name">{t("Name")}</Label>
               <Input
                 id="project-name"
                 value={form.name}
                 maxLength={80}
-                placeholder="Main channel"
+                placeholder={t("Main channel")}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, name: event.target.value }))
                 }
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="project-niche">Niche (optional)</Label>
+              <Label htmlFor="project-niche">
+                {t("Niche (optional)")}
+              </Label>
               <Input
                 id="project-niche"
                 value={form.niche}
                 maxLength={80}
-                placeholder="Tech reviews, history, self-improvement…"
+                placeholder={t("Tech reviews, history, self-improvement…")}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, niche: event.target.value }))
                 }
               />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="project-description">Description (optional)</Label>
+              <Label htmlFor="project-description">
+                {t("Description (optional)")}
+              </Label>
               <Textarea
                 id="project-description"
                 value={form.description}
                 rows={3}
                 maxLength={500}
                 className="resize-none"
-                placeholder="What is this channel or series about?"
+                placeholder={t("What is this channel or series about?")}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
@@ -341,7 +366,7 @@ export default function Projects() {
               onClick={submit}
             >
               {isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
-              {editingId ? "Save changes" : "Create project"}
+              {editingId ? t("Save changes") : t("Create project")}
             </Button>
           </DialogFooter>
         </DialogContent>

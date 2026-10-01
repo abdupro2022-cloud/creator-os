@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export type PillTone =
@@ -28,6 +29,7 @@ export function StatusPill({
   className?: string;
   dot?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <span
       className={cn(
@@ -39,7 +41,7 @@ export function StatusPill({
       {dot ? (
         <span className="size-1.5 rounded-full bg-current opacity-80" />
       ) : null}
-      {label}
+      {t(label)}
     </span>
   );
 }
@@ -167,6 +169,8 @@ export function runKindLabel(kind: string): string {
   switch (kind) {
     case "idea_development":
       return "Idea development";
+    case "research":
+      return "Research";
     case "script_outline":
       return "Script outline";
     case "script_section":

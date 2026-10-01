@@ -4,6 +4,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { AppShell } from "@/components/app/AppShell";
 import { applyTheme, readStoredTheme } from "@/hooks/use-theme";
 import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
+import { LanguageProvider } from "@/lib/i18n/provider";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import React, { StrictMode, useEffect, lazy, Suspense } from "react";
@@ -33,7 +34,7 @@ applyTheme(readStoredTheme());
 function RouteLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Loading...</div>
+      <div className="animate-pulse text-muted-foreground">Loading…</div>
     </div>
   );
 }
@@ -188,6 +189,7 @@ createRoot(reactContainer).render(
       <ToolbarErrorBoundary>
         <VlyToolbar />
       </ToolbarErrorBoundary>
+      <LanguageProvider>
       <ConvexAuthProvider client={convex}>
         <BrowserRouter>
           <RouteSyncer />
@@ -201,10 +203,7 @@ createRoot(reactContainer).render(
               <Route
                 path="/dashboard"
                 element={
-                  <RequireAuth
-                    title="Sign in to open your workspace"
-                    description="Your projects, ideas, scripts and agent runs live here."
-                  >
+                  <RequireAuth>
                     <AppShell />
                   </RequireAuth>
                 }
@@ -232,6 +231,7 @@ createRoot(reactContainer).render(
         </BrowserRouter>
         <Toaster />
       </ConvexAuthProvider>
+      </LanguageProvider>
     </ResettableRootErrorBoundary>
   </StrictMode>,
 );

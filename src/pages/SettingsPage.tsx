@@ -25,6 +25,7 @@ import {
   providerLabel,
 } from "@/lib/ai/models";
 import { TASK_PROFILES, routeModel, type TaskType } from "@/lib/ai/router";
+import { useT } from "@/lib/i18n/provider";
 import { listTools } from "@/lib/tools/registry";
 import { formatRelativeTime } from "@/lib/script";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -39,13 +40,14 @@ const TASKS: TaskType[] = [
   "verification",
 ];
 
-function errorText(error: unknown): string {
+function errorText(error: unknown, fallback: string): string {
   return error instanceof Error
     ? error.message.replace(/^Server Error\s*/i, "").slice(0, 300)
-    : "Something went wrong.";
+    : fallback;
 }
 
 export default function SettingsPage() {
+  const t = useT();
   const settings = useQuery(api.settings.get, {});
   const runs = useQuery(api.runs.list, { limit: 12 });
   const updateSettings = useMutation(api.settings.update);
@@ -95,11 +97,15 @@ export default function SettingsPage() {
           .filter(Boolean),
         autoVerify,
       });
-      toast.success("Settings saved", {
-        description: "Routing and verification preferences apply immediately.",
+      toast.success(t("Settings saved"), {
+        description: t(
+          "Routing and verification preferences apply immediately.",
+        ),
       });
     } catch (error) {
-      toast.error("Could not save settings", { description: errorText(error) });
+      toast.error(t("Could not save settings"), {
+        description: errorText(error, t("Something went wrong.")),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -127,13 +133,15 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-          Configuration
+          {t("Configuration")}
         </p>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Settings</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {t("Settings")}
+        </h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Model routing, verification policy and the exact tools the agent is
-          allowed to use. Provider credentials live only in the platform Keys
-          tab and never reach this page or the browser.
+          {t(
+            "Model routing, verification policy and the exact tools the agent is allowed to use. Provider credentials live only in the platform Keys tab and never reach this page or the browser.",
+          )}
         </p>
       </header>
 
@@ -141,7 +149,7 @@ export default function SettingsPage() {
         <div className="surface-panel flex flex-col gap-5 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-sm font-semibold tracking-tight">
-              Model routing
+              {t("Model routing")}
             </h2>
             <Button
               type="button"
@@ -151,19 +159,19 @@ export default function SettingsPage() {
               onClick={save}
             >
               {isSaving ? <Loader2 className="size-4 animate-spin" /> : null}
-              Save
+              {t("Save")}
             </Button>
           </div>
 
           {settings === undefined ? (
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
-              Loading settings…
+              {t("Loading settings…")}
             </div>
           ) : (
             <>
               <div className="flex flex-col gap-1.5">
-                <Label>Routing bias</Label>
+                <Label>{t("Routing bias")}</Label>
                 <Select
                   value={preference}
                   onValueChange={(value) =>
@@ -175,13 +183,13 @@ export default function SettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="balanced">
-                      Balanced — sound output at reasonable cost
+                      {t("Balanced — sound output at reasonable cost")}
                     </SelectItem>
                     <SelectItem value="quality">
-                      Quality — stronger models, slower and pricier
+                      {t("Quality — stronger models, slower and pricier")}
                     </SelectItem>
                     <SelectItem value="speed">
-                      Speed — fastest documented models first
+                      {t("Speed — fastest documented models first")}
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -210,7 +218,7 @@ export default function SettingsPage() {
                 ]
               ).map((row) => (
                 <div key={row.key} className="flex flex-col gap-1.5">
-                  <Label>{row.label}</Label>
+                  <Label>{t(row.label)}</Label>
                   <Select
                     value={row.value || "auto"}
                     onValueChange={(value) =>
@@ -221,10 +229,13 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto (capability routed)</SelectItem>
+                      <SelectItem value="auto">
+                        {t("Auto (capability routed)")}
+                      </SelectItem>
                       {catalog.map((model) => (
                         <SelectItem key={model.id} value={model.id}>
-                          {model.label} · {providerLabel(model.provider)}
+                          <bdi>{model.label}</bdi> ·{" "}
+                          {t(providerLabel(model.provider))}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -233,18 +244,23 @@ export default function SettingsPage() {
               ))}
 
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="extra-models">Custom model ids</Label>
+                <Label htmlFor="extra-models">
+                  {t("Custom model ids")}
+                </Label>
                 <Textarea
                   id="extra-models"
                   value={extraModels}
                   rows={3}
                   className="resize-none font-mono text-xs"
+                  dir="ltr"
                   placeholder={"my-vllm-endpoint\nllama-3.1-70b"}
                   onChange={(event) => setExtraModels(event.target.value)}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  One per line. The agent treats them as OpenAI-compatible
-                  endpoints and falls back to {DEFAULT_MODEL_ID} if a call fails.
+                  {t(
+                    "One per line. The agent treats them as OpenAI-compatible endpoints and falls back to {model} if a call fails.",
+                    { model: DEFAULT_MODEL_ID },
+                  )}
                 </p>
               </div>
 
@@ -252,10 +268,11 @@ export default function SettingsPage() {
 
               <div className="flex items-start justify-between gap-4">
                 <div className="flex flex-col gap-1">
-                  <Label>Verify automatically after drafting</Label>
+                  <Label>{t("Verify automatically after drafting")}</Label>
                   <p className="text-[11px] text-muted-foreground">
-                    Runs the deterministic QA scan plus a model review pass once
-                    every section is written.
+                    {t(
+                      "Runs the deterministic QA scan plus a model review pass once every section is written.",
+                    )}
                   </p>
                 </div>
                 <Switch checked={autoVerify} onCheckedChange={setAutoVerify} />
@@ -265,7 +282,7 @@ export default function SettingsPage() {
 
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-semibold tracking-tight">
-                  Routing preview
+                  {t("Routing preview")}
                 </h3>
                 <ul className="flex flex-col gap-2">
                   {previewRoutes.map(({ task, decision }) => (
@@ -275,7 +292,7 @@ export default function SettingsPage() {
                     >
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="text-xs font-medium">
-                          {TASK_PROFILES[task].label}
+                          {t(TASK_PROFILES[task].label)}
                         </span>
                         <StatusPill
                           label={
@@ -284,15 +301,27 @@ export default function SettingsPage() {
                           tone="accent"
                         />
                         {decision.source === "user_preference" ? (
-                          <StatusPill label="Pinned" tone="info" />
+                          <StatusPill label={t("Pinned")} tone="info" />
                         ) : null}
                       </span>
                       <span className="text-[11px] leading-relaxed text-muted-foreground">
-                        {decision.reason}
+                        {decision.source === "user_preference"
+                          ? t(
+                              "Pinned {model} for this task, with {fallback} as the fallback.",
+                              {
+                                model: decision.candidates[0]?.label ?? "",
+                                fallback: decision.candidates[1]?.label ?? "",
+                              },
+                            )
+                          : t("Automatically routed to {model}.", {
+                              model: decision.candidates[0]?.label ?? "",
+                            })}
                       </span>
                       {decision.candidates.length > 1 ? (
                         <span className="text-[11px] text-muted-foreground">
-                          Fallback: {decision.candidates[1]?.label}
+                          {t("Fallback: {model}", {
+                            model: decision.candidates[1]?.label ?? "",
+                          })}
                         </span>
                       ) : null}
                     </li>
@@ -301,10 +330,11 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-[11px] leading-relaxed text-muted-foreground">
-                Supported providers:{" "}
-                {PROVIDERS.map((provider) => provider.label).join(", ")}. The
-                provider credential is read on the server from the platform
-                integration key; it is never sent to the browser.
+                {t("Supported providers: {providers}. The provider credential is read on the server from the platform integration key; it is never sent to the browser.", {
+                  providers: PROVIDERS.map((provider) =>
+                    t(provider.label),
+                  ).join("، "),
+                })}
               </p>
             </>
           )}
@@ -314,18 +344,19 @@ export default function SettingsPage() {
           <div className="surface-panel flex flex-col gap-3 p-4 sm:p-5">
             <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
               <Activity className="size-4 text-primary" />
-              Gateway availability
+              {t("Gateway availability")}
             </h2>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              Asks the AI gateway which models this deployment can reach right
-              now, rather than trusting a static list. {MODELS.length} of them are
-              catalogued with a curated routing strength.
+              {t(
+                "Asks the AI gateway which models this deployment can reach right now, rather than trusting a static list. {n} of them are catalogued with a curated routing strength.",
+                { n: MODELS.length },
+              )}
             </p>
             {inventory ? (
               inventory.ok ? (
                 <div className="flex flex-col gap-2">
                   <StatusPill
-                    label={`${inventory.count} models reachable`}
+                    label={t("{n} models reachable", { n: inventory.count })}
                     tone="success"
                     dot
                   />
@@ -354,13 +385,13 @@ export default function SettingsPage() {
                   const result = await checkInventory({});
                   setInventory(result);
                   if (!result.ok) {
-                    toast.error("Could not reach the gateway", {
+                    toast.error(t("Could not reach the gateway"), {
                       description: result.error,
                     });
                   }
                 } catch (error) {
-                  toast.error("Could not check the gateway", {
-                    description: errorText(error),
+                  toast.error(t("Could not check the gateway"), {
+                    description: errorText(error, t("Something went wrong.")),
                   });
                 } finally {
                   setIsChecking(false);
@@ -368,23 +399,24 @@ export default function SettingsPage() {
               }}
             >
               {isChecking ? <Loader2 className="size-4 animate-spin" /> : null}
-              Check gateway
+              {t("Check gateway")}
             </Button>
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Vision, tool-calling and context-length values in the catalog are
-              conservative planning hints — the gateway does not publish
-              capability descriptors, so they are never presented as verified.
+              {t(
+                "Vision, tool-calling and context-length values in the catalog are conservative planning hints — the gateway does not publish capability descriptors, so they are never presented as verified.",
+              )}
             </p>
           </div>
 
           <div className="surface-panel flex flex-col gap-3 p-4 sm:p-5">
             <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
               <Wrench className="size-4 text-primary" />
-              Registered tools ({tools.length})
+              {t("Registered tools ({n})", { n: tools.length })}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Only tools that are fully implemented are registered. Each declares
-              a permission level the agent core enforces before running it.
+              {t(
+                "Only tools that are fully implemented are registered. Each declares a permission level the agent core enforces before running it.",
+              )}
             </p>
             <ul className="flex flex-col gap-2">
               {tools.map((tool) => (
@@ -393,41 +425,47 @@ export default function SettingsPage() {
                   className="flex flex-col gap-1.5 rounded-lg border border-border/60 p-2.5"
                 >
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-[11px]">{tool.id}</span>
-                    <StatusPill label={tool.permission} tone="neutral" />
+                    <span dir="ltr" className="font-mono text-[11px]">
+                      {tool.id}
+                    </span>
+                    <StatusPill label={t(tool.permission)} tone="neutral" />
                     {tool.requiresConfirmation ? (
-                      <StatusPill label="Needs confirmation" tone="warning" />
+                      <StatusPill
+                        label={t("Needs confirmation")}
+                        tone="warning"
+                      />
                     ) : (
-                      <StatusPill label="Auto" tone="success" />
+                      <StatusPill label={t("Auto")} tone="success" />
                     )}
                   </span>
                   <span className="text-xs leading-relaxed text-muted-foreground">
-                    {tool.description}
+                    {t(tool.description)}
                   </span>
                 </li>
               ))}
             </ul>
             <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
               <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-              Tools with EXTERNAL_ACTION or DESTRUCTIVE permission require
-              explicit confirmation; none are registered yet, so no external
-              action can run without your approval.
+              {t(
+                "Tools with EXTERNAL_ACTION or DESTRUCTIVE permission require explicit confirmation; none are registered yet, so no external action can run without your approval.",
+              )}
             </p>
           </div>
 
           <div className="surface-panel flex flex-col gap-3 p-4 sm:p-5">
             <h2 className="text-sm font-semibold tracking-tight">
-              Recent agent runs
+              {t("Recent agent runs")}
             </h2>
             {runs === undefined ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
-                Loading…
+                {t("Loading…")}
               </div>
             ) : runs.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No runs yet. Each model call is recorded with its model, latency
-                and token usage.
+                {t(
+                  "No runs yet. Each model call is recorded with its model, latency and token usage.",
+                )}
               </p>
             ) : (
               <ul className="flex flex-col gap-4">
@@ -435,7 +473,7 @@ export default function SettingsPage() {
                   <li key={run._id} className="flex flex-col gap-2">
                     <span className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                       <span className="font-semibold tracking-wider uppercase">
-                        {runKindLabel(run.kind)}
+                        {t(runKindLabel(run.kind))}
                       </span>
                       <StatusPill {...runStatusMeta(run.status)} />
                       <span>{formatRelativeTime(run.createdAt)}</span>

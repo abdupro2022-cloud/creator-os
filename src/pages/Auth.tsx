@@ -14,7 +14,9 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 
+import { LanguageToggle } from "@/components/app/LanguageToggle";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/lib/i18n/provider";
 import logo from "@/assets/logo.svg";
 import { ArrowRight, Loader2, Mail, UserX } from "lucide-react";
 import { Suspense, useEffect, useState } from "react";
@@ -46,6 +48,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
@@ -66,7 +69,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to send verification code. Please try again.",
+          : t("Failed to send verification code. Please try again."),
       );
       setIsLoading(false);
     }
@@ -87,7 +90,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     } catch (error) {
       console.error("OTP verification error:", error);
 
-      setError("The verification code you entered is incorrect.");
+      setError(t("The verification code you entered is incorrect."));
       setIsLoading(false);
 
       setOtp("");
@@ -105,13 +108,20 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     } catch (error) {
       console.error("Guest login error:", error);
       console.error("Error details:", JSON.stringify(error, null, 2));
-      setError(`Failed to sign in as guest: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setError(
+        t("Failed to sign in as guest: {reason}", {
+          reason: error instanceof Error ? error.message : t("Unknown error"),
+        }),
+      );
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="relative min-h-screen flex flex-col">
+      <div className="absolute top-3 end-3 z-10">
+        <LanguageToggle />
+      </div>
 
       
       {/* Auth Content */}
@@ -131,9 +141,9 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       onClick={() => navigate("/")}
                     />
                   </div>
-                <CardTitle className="text-xl">Get Started</CardTitle>
+                <CardTitle className="text-xl">{t("Get Started")}</CardTitle>
                 <CardDescription>
-                  Enter your email to log in or sign up
+                  {t("Enter your email to log in or sign up")}
                 </CardDescription>
               </CardHeader>
               <form onSubmit={handleEmailSubmit}>
@@ -141,12 +151,12 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                   
                   <div className="relative flex items-center gap-2">
                     <div className="relative flex-1">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute start-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         name="email"
                         placeholder="name@example.com"
                         type="email"
-                        className="pl-9"
+                        className="ps-9"
                         disabled={isLoading}
                         required
                       />
@@ -160,7 +170,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       {isLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="h-4 w-4 rtl:rotate-180" />
                       )}
                     </Button>
                   </div>
@@ -175,7 +185,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
                         <span className="bg-background px-2 text-muted-foreground">
-                          Or
+                          {t("Or")}
                         </span>
                       </div>
                     </div>
@@ -187,8 +197,8 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       onClick={handleGuestLogin}
                       disabled={isLoading}
                     >
-                      <UserX className="mr-2 h-4 w-4" />
-                      Continue as Guest
+                      <UserX className="me-2 h-4 w-4" />
+                      {t("Continue as Guest")}
                     </Button>
                   </div>
                 </CardContent>
@@ -197,9 +207,9 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           ) : (
             <>
               <CardHeader className="text-center mt-4">
-                <CardTitle>Check your email</CardTitle>
+                <CardTitle>{t("Check your email")}</CardTitle>
                 <CardDescription>
-                  We've sent a code to {step.email}
+                  {t("We've sent a code to {email}", { email: step.email })}
                 </CardDescription>
               </CardHeader>
               <form onSubmit={handleOtpSubmit}>
@@ -236,13 +246,13 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     </p>
                   )}
                   <p className="text-sm text-muted-foreground text-center mt-4">
-                    Didn't receive a code?{" "}
+                    {t("Didn't receive a code?")} {" "}
                     <Button
                       variant="link"
                       className="p-0 h-auto"
                       onClick={() => setStep("signIn")}
                     >
-                      Try again
+                      {t("Try again")}
                     </Button>
                   </p>
                 </CardContent>
@@ -254,13 +264,13 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Verifying...
+                        <Loader2 className="me-2 h-4 w-4 animate-spin" />
+                        {t("Verifying...")}
                       </>
                     ) : (
                       <>
-                        Verify code
-                        <ArrowRight className="ml-2 h-4 w-4" />
+                        {t("Verify code")}
+                        <ArrowRight className="me-2 h-4 w-4 rtl:rotate-180" />
                       </>
                     )}
                   </Button>
@@ -271,7 +281,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                     disabled={isLoading}
                     className="w-full"
                   >
-                    Use different email
+                    {t("Use different email")}
                   </Button>
                 </CardFooter>
               </form>
@@ -279,7 +289,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
           )}
 
           <div className="py-4 px-6 text-xs text-center text-muted-foreground bg-muted border-t rounded-b-lg">
-            Secured by{" "}
+            {t("Secured by")} {" "}
             <a
               href="https://freebuff.com"
               target="_blank"

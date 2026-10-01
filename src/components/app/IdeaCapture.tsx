@@ -9,6 +9,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useI18n } from "@/lib/i18n/provider";
 import { useMutation } from "convex/react";
 import { Loader2, Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -43,12 +44,13 @@ export function IdeaCapture({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useI18n();
 
   const submit = async () => {
     setError(null);
     const value = rawInput.trim();
     if (value.length < 8) {
-      setError("Describe the idea in at least a few words.");
+      setError(t("Describe the idea in at least a few words."));
       return;
     }
     setIsSaving(true);
@@ -60,17 +62,17 @@ export function IdeaCapture({
           : undefined,
       });
       setRawInput("");
-      toast.success("Idea captured", {
-        description: "Develop it to get an angle, hook and key points.",
+      toast.success(t("Idea captured"), {
+        description: t("Develop it to get an angle, hook and key points."),
       });
       onCaptured?.(ideaId);
     } catch (caught) {
       const detail =
         caught instanceof Error
           ? caught.message.replace(/^Server Error\s*/i, "").slice(0, 300)
-          : "Could not save the idea.";
+          : t("Could not save the idea.");
       setError(detail);
-      toast.error("Could not capture the idea", { description: detail });
+      toast.error(t("Could not capture the idea"), { description: detail });
     } finally {
       setIsSaving(false);
     }
@@ -81,12 +83,13 @@ export function IdeaCapture({
       <div className="flex items-center gap-2">
         <Sparkles className="size-4 text-primary" />
         <h2 className="text-sm font-semibold tracking-tight">
-          Capture a raw idea
+          {t("Capture a raw idea")}
         </h2>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        A topic, a question, a half-formed thought — write it the way you would
-        say it out loud.
+        {t(
+          "A topic, a question, a half-formed thought — write it the way you would say it out loud.",
+        )}
       </p>
 
       <Textarea
@@ -100,7 +103,7 @@ export function IdeaCapture({
         }}
         rows={compact ? 2 : 3}
         maxLength={4000}
-        placeholder="مثال: ليش أغلب القنوات تموت بعد أول 10 فيديوهات؟"
+        placeholder={t('مثال: ليش أغلب القنوات تموت بعد أول 10 فيديوهات؟')}
         className="mt-3 resize-none bg-background/60 text-sm"
         disabled={isSaving}
       />
@@ -112,9 +115,9 @@ export function IdeaCapture({
               <SelectTrigger
                 size="sm"
                 className="w-full min-w-40 sm:w-auto"
-                aria-label="Project"
+                aria-label={t("Project")}
               >
-                <SelectValue placeholder="Project" />
+                <SelectValue placeholder={t("Project")} />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((project) => (
@@ -126,10 +129,13 @@ export function IdeaCapture({
             </Select>
           ) : (
             <span className="text-xs text-muted-foreground">
-              A default project will be created automatically.
+              {t("A default project will be created automatically.")}
             </span>
           )}
-          <span className="hidden text-[11px] text-muted-foreground sm:inline">
+          <span
+            dir="ltr"
+            className="hidden text-[11px] text-muted-foreground sm:inline"
+          >
             {rawInput.trim().length}/4000
           </span>
         </div>
@@ -146,7 +152,7 @@ export function IdeaCapture({
           ) : (
             <Sparkles className="size-4" />
           )}
-          Capture idea
+          {t("Capture idea")}
         </Button>
       </div>
 

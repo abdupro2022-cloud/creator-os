@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useT } from "@/lib/i18n/provider";
 import { formatDuration, formatRelativeTime } from "@/lib/script";
 import { cn } from "@/lib/utils";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -39,10 +40,10 @@ import { toast } from "sonner";
  * YouTube themselves.
  */
 
-function errorText(error: unknown): string {
+function errorText(error: unknown, fallback: string): string {
   return error instanceof Error
     ? error.message.replace(/^Server Error\s*/i, "").slice(0, 400)
-    : "Something went wrong.";
+    : fallback;
 }
 
 /** Chapters always render as m:ss — `formatDuration` shortens long spans. */
@@ -93,6 +94,7 @@ function CopyButton({
   copied: boolean;
   label?: string;
 }) {
+  const t = useT();
   return (
     <Button
       type="button"
@@ -102,12 +104,13 @@ function CopyButton({
       onClick={onCopy}
     >
       {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
-      {label}
+      {t(label)}
     </Button>
   );
 }
 
 export default function PublishKit() {
+  const t = useT();
   const { scriptId: scriptIdParam } = useParams();
   const scriptId = scriptIdParam as Id<"scripts"> | undefined;
 
@@ -127,13 +130,13 @@ export default function PublishKit() {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedKey(key);
-      toast.success(`${what} copied`);
+      toast.success(t("{what} copied", { what }));
       window.setTimeout(
         () => setCopiedKey((current) => (current === key ? null : current)),
         1500,
       );
     } catch {
-      toast.error("Clipboard is not available in this browser.");
+      toast.error(t("Clipboard is not available in this browser."));
     }
   };
 
@@ -141,31 +144,38 @@ export default function PublishKit() {
     if (!scriptId) return;
     setIsGenerating(true);
     const toastId = toast.loading(
-      "Building the publish kit — chapters, titles, description and Shorts cuts…",
+      t("Building the publish kit — chapters, titles, description and Shorts cuts…"),
     );
     try {
       const result = await generate({ scriptId });
       if (!result.ok) {
-        toast.error("The publish kit could not be built", {
+        toast.error(t("The publish kit could not be built"), {
           id: toastId,
           description: result.error,
         });
         return;
       }
       toast.success(
-        `${result.titleCount ?? 0} titles, ${result.chapterCount ?? 0} chapters, ${result.shortCount ?? 0} Shorts cuts`,
+        t("{titles} titles, {chapters} chapters, {shorts} Shorts cuts", {
+          titles: result.titleCount ?? 0,
+          chapters: result.chapterCount ?? 0,
+          shorts: result.shortCount ?? 0,
+        }),
         {
           id: toastId,
           description:
             result.issues && result.issues.length > 0
-              ? `${result.issues.length} thing(s) to fix before you publish — see the notes below.`
-              : "Nothing flagged by the metadata check.",
+              ? t(
+                  "{n} thing(s) to fix before you publish — see the notes below.",
+                  { n: result.issues.length },
+                )
+              : t("Nothing flagged by the metadata check."),
         },
       );
     } catch (error) {
-      toast.error("The publish kit could not be built", {
+      toast.error(t("The publish kit could not be built"), {
         id: toastId,
-        description: errorText(error),
+        description: errorText(error, t("Something went wrong.")),
       });
     } finally {
       setIsGenerating(false);
@@ -176,9 +186,11 @@ export default function PublishKit() {
     if (!data?.pack) return;
     try {
       await deletePack({ packId: data.pack._id });
-      toast.success("Publish kit deleted");
+      toast.success(t("Publish kit deleted"));
     } catch (error) {
-      toast.error("Could not delete the kit", { description: errorText(error) });
+      toast.error(t("Could not delete the kit"), {
+        description: errorText(error, t("Something went wrong.")),
+      });
     }
   };
 
@@ -186,7 +198,7 @@ export default function PublishKit() {
     return (
       <div className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" />
-        Loading publish kit…
+        {t("Loading publish kit…")}
       </div>
     );
   }
@@ -194,11 +206,13 @@ export default function PublishKit() {
   if (!data) {
     return (
       <div className="surface-panel flex flex-col items-start gap-3 p-6">
-        <p className="text-sm font-medium">This script no longer exists.</p>
+        <p className="text-sm font-medium">
+          {t("This script no longer exists.")}
+        </p>
         <Button type="button" variant="outline" size="sm" className="gap-2" asChild>
           <Link to="/dashboard/scripts">
-            <ArrowLeft className="size-4" />
-            Back to scripts
+            <ArrowLeft className="size-4 rtl:rotate-180" />
+            {t("Back to scripts")}
           </Link>
         </Button>
       </div>
@@ -236,24 +250,26 @@ export default function PublishKit() {
           asChild
         >
           <Link to={`/dashboard/scripts/${script._id}`}>
-            <ArrowLeft className="size-4" />
-            Back to Script Studio
+            <ArrowLeft className="size-4 rtl:rotate-180" />
+            {t("Back to Script Studio")}
           </Link>
         </Button>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <StatusPill label="Publish kit" tone="accent" />
-              {meta ? <StatusPill label={meta.label} tone={meta.tone} dot /> : null}
+              <StatusPill label={t("Publish kit")} tone="accent" />
+              {meta ? (
+                <StatusPill label={t(meta.label)} tone={meta.tone} dot />
+              ) : null}
               {pack?.model ? (
-                <span className="text-[11px] text-muted-foreground">
+                <span dir="ltr" className="text-[11px] text-muted-foreground">
                   {pack.model}
                 </span>
               ) : null}
               {pack ? (
                 <span className="text-[11px] text-muted-foreground">
-                  Updated {formatRelativeTime(pack.updatedAt)}
+                  {t("Updated {when}", { when: formatRelativeTime(pack.updatedAt) })}
                 </span>
               ) : null}
             </div>
@@ -261,13 +277,22 @@ export default function PublishKit() {
               {script.title}
             </h1>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>{script.wordCount} words</span>
-              <span>{formatDuration(script.estSeconds)} narration</span>
+              <span>{t("{n} words", { n: script.wordCount })}</span>
               <span>
-                target {formatDuration(script.targetDurationSec)}
+                {t("{time} narration", {
+                  time: formatDuration(script.estSeconds),
+                })}
               </span>
               <span>
-                {writtenCount}/{data.sections.length} sections written
+                {t("target {time}", {
+                  time: formatDuration(script.targetDurationSec),
+                })}
+              </span>
+              <span>
+                {t("{written}/{total} sections written", {
+                  written: writtenCount,
+                  total: data.sections.length,
+                })}
               </span>
             </div>
           </div>
@@ -284,7 +309,7 @@ export default function PublishKit() {
             ) : (
               <Wand2 className="size-4" />
             )}
-            {pack?.status === "ready" ? "Regenerate kit" : "Build publish kit"}
+            {pack?.status === "ready" ? t("Regenerate kit") : t("Build publish kit")}
           </Button>
         </div>
       </div>
@@ -293,22 +318,24 @@ export default function PublishKit() {
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
         <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-primary uppercase">
           <Rocket className="size-3.5" />
-          No upload — by design
+          {t("No upload — by design")}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          This workspace never connects to your YouTube account. Everything here
-          is copy you paste in yourself, and the chapter timestamps are derived
-          from this draft rather than guessed.
+          {t(
+            "This workspace never connects to your YouTube account. Everything here is copy you paste in yourself, and the chapter timestamps are derived from this draft rather than guessed.",
+          )}
         </p>
       </div>
 
       {isBusy ? (
         <div className="surface-panel border-primary/30 bg-primary/5 p-4">
           <p className="text-xs font-semibold tracking-wider text-primary uppercase">
-            Agent working
+            {t("Agent working")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Chapters and the metadata check run first, then the copy is written.
+            {t(
+              "Chapters and the metadata check run first, then the copy is written.",
+            )}
           </p>
           {pack ? <LiveRunTrace targetId={pack._id} className="mt-4" /> : null}
         </div>
@@ -317,7 +344,7 @@ export default function PublishKit() {
       {pack?.errorMessage && !isBusy ? (
         <div className="rounded-xl border border-destructive/35 bg-destructive/8 p-3">
           <p className="text-xs font-medium text-destructive">
-            The last run did not finish cleanly
+            {t("The last run did not finish cleanly")}
           </p>
           <p className="mt-1 text-xs leading-relaxed break-words">
             {pack.errorMessage}
@@ -327,17 +354,21 @@ export default function PublishKit() {
 
       {!pack ? (
         <div className="surface-panel flex flex-col items-start gap-3 p-6">
-          <p className="text-sm font-medium">No publish kit yet</p>
+          <p className="text-sm font-medium">{t("No publish kit yet")}</p>
           <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
             {writtenCount === 0
-              ? "Draft the script first — the kit is built from the finished narration, so nothing is invented about a video that does not exist yet."
-              : "Build the kit to get title options, a description, tags, real chapter markers, a thumbnail brief and the Shorts cuts worth pulling out of this script."}
+              ? t(
+                  "Draft the script first — the kit is built from the finished narration, so nothing is invented about a video that does not exist yet.",
+                )
+              : t(
+                  "Build the kit to get title options, a description, tags, real chapter markers, a thumbnail brief and the Shorts cuts worth pulling out of this script.",
+                )}
           </p>
           {writtenCount === 0 ? (
             <Button type="button" variant="outline" size="sm" className="gap-2" asChild>
               <Link to={`/dashboard/scripts/${script._id}`}>
-                <ArrowLeft className="size-4" />
-                Open Script Studio
+                <ArrowLeft className="size-4 rtl:rotate-180" />
+                {t("Open Script Studio")}
               </Link>
             </Button>
           ) : null}
@@ -352,18 +383,18 @@ export default function PublishKit() {
           {/* ----------------------------- left column ----------------------------- */}
           <div className="flex flex-col gap-6">
             <Panel
-              title={`Title options (${pack.titles.length})`}
+              title={t("Title options ({n})", { n: pack.titles.length })}
               icon={Rocket}
               action={
                 <CopyButton
                   copied={copiedKey === "title"}
-                  onCopy={() => copy("title", chosenTitle, "Title")}
+                  onCopy={() => copy("title", chosenTitle, t("Title"))}
                 />
               }
             >
               {pack.titles.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  No title options were produced. Regenerate the kit.
+                  {t("No title options were produced. Regenerate the kit.")}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
@@ -380,13 +411,16 @@ export default function PublishKit() {
                                 index,
                               });
                             } catch (error) {
-                              toast.error("Could not save that choice", {
-                                description: errorText(error),
+                              toast.error(t("Could not save that choice"), {
+                                description: errorText(
+                                  error,
+                                  t("Something went wrong."),
+                                ),
                               });
                             }
                           }}
                           className={cn(
-                            "flex w-full flex-col gap-1 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                            "flex w-full flex-col gap-1 rounded-lg border px-3 py-2.5 text-start transition-colors",
                             isChosen
                               ? "border-primary/50 bg-primary/8"
                               : "border-border bg-muted/30 hover:border-primary/35",
@@ -403,15 +437,18 @@ export default function PublishKit() {
                             >
                               {isChosen ? <Check className="size-3" /> : null}
                             </span>
-                            <span className="text-sm font-medium">
+                            <span dir="auto" className="text-sm font-medium">
                               {option.text}
                             </span>
-                            <span className="ml-auto shrink-0 pt-0.5 text-[10px] text-muted-foreground tabular-nums">
+                            <span className="ms-auto shrink-0 pt-0.5 text-[10px] text-muted-foreground tabular-nums">
                               {option.text.length}
                             </span>
                           </span>
                           {option.rationale ? (
-                            <span className="pl-6 text-xs leading-relaxed text-muted-foreground">
+                            <span
+                              dir="auto"
+                              className="ps-6 text-xs leading-relaxed text-muted-foreground"
+                            >
                               {option.rationale}
                             </span>
                           ) : null}
@@ -424,13 +461,15 @@ export default function PublishKit() {
             </Panel>
 
             <Panel
-              title="Description"
+              title={t("Description")}
               icon={MessageSquareQuote}
               action={
                 <div className="flex items-center gap-1">
                   <CopyButton
                     copied={copiedKey === "description"}
-                    onCopy={() => copy("description", pack.description, "Description")}
+                    onCopy={() =>
+                      copy("description", pack.description, t("Description"))
+                    }
                   />
                   <Button
                     type="button"
@@ -442,7 +481,7 @@ export default function PublishKit() {
                       copy(
                         "description-chapters",
                         `${pack.description}\n\n${chapterBlock}`,
-                        "Description with chapters",
+                        t("Description with chapters"),
                       )
                     }
                   >
@@ -451,40 +490,47 @@ export default function PublishKit() {
                     ) : (
                       <ListOrdered className="size-4" />
                     )}
-                    With chapters
+                    {t("With chapters")}
                   </Button>
                 </div>
               }
             >
               <p className="text-xs text-muted-foreground">
-                {pack.description.length} characters. Written to be pasted as-is —
-                no links or statistics were invented.
+                {t(
+                  "{n} characters. Written to be pasted as-is — no links or statistics were invented.",
+                  { n: pack.description.length },
+                )}
               </p>
-              <pre className="max-h-80 overflow-auto rounded-lg border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap">
+              <pre
+                dir="auto"
+                className="max-h-80 overflow-auto rounded-lg border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap"
+              >
                 {pack.description || "—"}
               </pre>
             </Panel>
 
             <Panel
-              title={`Chapters (${pack.chapters.length})`}
+              title={t("Chapters ({n})", { n: pack.chapters.length })}
               icon={ListOrdered}
               action={
                 <CopyButton
                   copied={copiedKey === "chapters"}
-                  onCopy={() => copy("chapters", chapterBlock, "Chapters")}
+                  onCopy={() => copy("chapters", chapterBlock, t("Chapters"))}
                 />
               }
             >
               {pack.chapters.length === 0 ? (
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  No chapters could be derived — this draft is too short for a
-                  chapter list to help.
+                  {t(
+                    "No chapters could be derived — this draft is too short for a chapter list to help.",
+                  )}
                 </p>
               ) : (
                 <>
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Timestamps are calculated from each section's real narration
-                    length, so they line up with the edit.
+                    {t(
+                      "Timestamps are calculated from each section's real narration length, so they line up with the edit.",
+                    )}
                   </p>
                   <ol className="flex flex-col gap-1.5">
                     {pack.chapters.map((chapter, index) => (
@@ -495,7 +541,9 @@ export default function PublishKit() {
                         <span className="shrink-0 font-mono text-xs text-primary tabular-nums">
                           {chapterTime(chapter.atSeconds)}
                         </span>
-                        <span className="text-sm">{chapter.label}</span>
+                        <span dir="auto" className="text-sm">
+                          {chapter.label}
+                        </span>
                       </li>
                     ))}
                   </ol>
@@ -503,9 +551,11 @@ export default function PublishKit() {
               )}
             </Panel>
 
-            <Panel title={`Tags (${pack.tags.length})`} icon={Hash}>
+            <Panel title={t("Tags ({n})", { n: pack.tags.length })} icon={Hash}>
               {pack.tags.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No usable tags.</p>
+                <p className="text-xs text-muted-foreground">
+                  {t("No usable tags.")}
+                </p>
               ) : (
                 <div className="flex flex-wrap items-center gap-2">
                   {pack.tags.map((tag) => (
@@ -516,24 +566,33 @@ export default function PublishKit() {
                       {tag}
                     </span>
                   ))}
-                  <span className="ml-auto text-[11px] text-muted-foreground">
-                    {pack.tags.join(",").length} chars
+                  <span className="ms-auto text-[11px] text-muted-foreground">
+                    {t("{n} chars", { n: pack.tags.join(",").length })}
                   </span>
                 </div>
               )}
             </Panel>
 
             <Panel
-              title="Pinned comment"
+              title={t("Pinned comment")}
               icon={MessageSquareQuote}
               action={
                 <CopyButton
                   copied={copiedKey === "comment"}
-                  onCopy={() => copy("comment", pack.pinnedComment, "Pinned comment")}
+                  onCopy={() =>
+                    copy(
+                      "comment",
+                      pack.pinnedComment,
+                      t("Pinned comment"),
+                    )
+                  }
                 />
               }
             >
-              <p className="rounded-lg border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap">
+              <p
+                dir="auto"
+                className="rounded-lg border border-border bg-muted/30 p-3 text-xs leading-relaxed whitespace-pre-wrap"
+              >
                 {pack.pinnedComment || "—"}
               </p>
             </Panel>
@@ -541,48 +600,53 @@ export default function PublishKit() {
 
           {/* ---------------------------- right column ---------------------------- */}
           <div className="flex flex-col gap-6">
-            <Panel title="Thumbnail brief" icon={ImageIcon}>
+            <Panel title={t("Thumbnail brief")} icon={ImageIcon}>
               {pack.thumbnail ? (
                 <dl className="flex flex-col gap-2 text-xs">
                   <div className="rounded-lg border border-primary/35 bg-primary/8 p-3">
                     <dt className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                      Overlay text
+                      {t("Overlay text")}
                     </dt>
-                    <dd className="mt-0.5 text-sm font-semibold">
+                    <dd dir="auto" className="mt-0.5 text-sm font-semibold">
                       {pack.thumbnail.overlayText}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                      Subject
+                      {t("Subject")}
                     </dt>
-                    <dd className="mt-0.5 leading-relaxed">
+                    <dd dir="auto" className="mt-0.5 leading-relaxed">
                       {pack.thumbnail.subject}
                     </dd>
                   </div>
                   <div>
                     <dt className="text-[10px] tracking-wide text-muted-foreground uppercase">
-                      Composition
+                      {t("Composition")}
                     </dt>
-                    <dd className="mt-0.5 leading-relaxed">
+                    <dd dir="auto" className="mt-0.5 leading-relaxed">
                       {pack.thumbnail.composition}
                     </dd>
                   </div>
                   <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    Art direction for a human designer — no image was generated.
+                    {t(
+                      "Art direction for a human designer — no image was generated.",
+                    )}
                   </p>
                 </dl>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  No thumbnail brief was produced.
+                  {t("No thumbnail brief was produced.")}
                 </p>
               )}
             </Panel>
 
-            <Panel title={`Shorts cuts (${pack.shorts.length})`} icon={Scissors}>
+            <Panel
+              title={t("Shorts cuts ({n})", { n: pack.shorts.length })}
+              icon={Scissors}
+            >
               {pack.shorts.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  No Shorts cuts were proposed.
+                  {t("No Shorts cuts were proposed.")}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-3">
@@ -592,10 +656,12 @@ export default function PublishKit() {
                       className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium">{cut.title}</p>
+                        <p dir="auto" className="text-sm font-medium">
+                          {cut.title}
+                        </p>
                         <button
                           type="button"
-                          aria-label="Copy this Shorts cut"
+                          aria-label={t("Copy this Shorts cut")}
                           className="shrink-0 text-muted-foreground hover:text-foreground"
                           onClick={() =>
                             copy(
@@ -607,7 +673,7 @@ export default function PublishKit() {
                                 "",
                                 ...cut.beats.map((beat) => `- ${beat}`),
                               ].join("\n"),
-                              "Shorts cut",
+                              t("Shorts cut"),
                             )
                           }
                         >
@@ -618,7 +684,10 @@ export default function PublishKit() {
                           )}
                         </button>
                       </div>
-                      <p className="text-xs leading-relaxed text-muted-foreground">
+                      <p
+                        dir="auto"
+                        className="text-xs leading-relaxed text-muted-foreground"
+                      >
                         {cut.hook}
                       </p>
                       {cut.beats.length > 0 ? (
@@ -638,7 +707,9 @@ export default function PublishKit() {
                       ) : null}
                       {cut.sourceHeading ? (
                         <p className="text-[11px] text-muted-foreground">
-                          From the section “{cut.sourceHeading}”
+                          {t("From the section “{heading}”", {
+                            heading: cut.sourceHeading,
+                          })}
                         </p>
                       ) : null}
                     </li>
@@ -648,7 +719,7 @@ export default function PublishKit() {
             </Panel>
 
             <Panel
-              title="Before you publish"
+              title={t("Before you publish")}
               icon={AlertTriangle}
               className={
                 findings.length > 0 ? "border-warning/35 bg-warning/5" : undefined
@@ -656,8 +727,9 @@ export default function PublishKit() {
             >
               {findings.length === 0 ? (
                 <p className="text-xs leading-relaxed text-muted-foreground">
-                  The metadata check measured everything against YouTube's real
-                  field limits and found nothing to fix.
+                  {t(
+                    "The metadata check measured everything against YouTube's real field limits and found nothing to fix.",
+                  )}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
@@ -669,7 +741,7 @@ export default function PublishKit() {
                       <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-warning" />
                       <span>
                         <span className="font-medium text-foreground">
-                          {finding.kind}:
+                          {t(finding.kind)}:
                         </span>{" "}
                         {finding.issue}
                       </span>
@@ -683,11 +755,12 @@ export default function PublishKit() {
 
             <div className="surface-panel flex flex-col items-start gap-3 p-4">
               <h2 className="text-sm font-semibold tracking-tight">
-                Danger zone
+                {t("Danger zone")}
               </h2>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Deleting the kit leaves the script untouched. You can build a
-                fresh one at any time.
+                {t(
+                  "Deleting the kit leaves the script untouched. You can build a fresh one at any time.",
+                )}
               </p>
               <Button
                 type="button"
@@ -697,7 +770,7 @@ export default function PublishKit() {
                 onClick={handleDelete}
               >
                 <Trash2 className="size-4" />
-                Delete publish kit
+                {t("Delete publish kit")}
               </Button>
             </div>
           </div>

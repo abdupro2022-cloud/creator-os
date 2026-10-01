@@ -14,6 +14,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useAuth } from "@/hooks/use-auth";
 import { useIdeaWorkflow } from "@/hooks/use-idea-workflow";
+import { useI18n } from "@/lib/i18n/provider";
 import { formatDuration, formatRelativeTime } from "@/lib/script";
 import { cn } from "@/lib/utils";
 import { useQuery } from "convex/react";
@@ -40,14 +41,15 @@ function SectionHeader({
   hint?: string;
   action?: React.ReactNode;
 }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-start gap-2">
         <Icon className="mt-0.5 size-4 text-primary" />
         <div>
-          <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-sm font-semibold tracking-tight">{t(title)}</h2>
           {hint ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t(hint)}</p>
           ) : null}
         </div>
       </div>
@@ -63,6 +65,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [openIdeaId, setOpenIdeaId] = useState<Id<"ideas"> | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { t } = useI18n();
 
   const projects = overview?.projects ?? [];
   const firstName = (user?.name ?? "").split(" ")[0];
@@ -82,14 +85,17 @@ export default function Dashboard() {
       >
         <div>
           <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-            Command Center
+            {t("Command Center")}
           </p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-            {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
+            {firstName
+              ? t("Welcome back, {name}", { name: firstName })
+              : t("Welcome back")}
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-            Capture raw ideas here, develop them into a real angle, then draft
-            the script. Every number below comes from your own workspace.
+            {t(
+              "Capture raw ideas here, develop them into a real angle, then draft the script. Every number below comes from your own workspace.",
+            )}
           </p>
         </div>
         <Button
@@ -100,18 +106,18 @@ export default function Dashboard() {
           onClick={() => navigate("/dashboard/scripts")}
         >
           <PenLine className="size-4" />
-          Open Script Studio
+          {t("Open Script Studio")}
         </Button>
       </motion.header>
 
       {overview === undefined ? (
         <div className="flex items-center gap-2 py-16 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          Loading your workspace…
+          {t("Loading your workspace…")}
         </div>
       ) : overview === null ? (
         <p className="py-16 text-sm text-muted-foreground">
-          Workspace unavailable — try signing in again.
+          {t("Workspace unavailable — try signing in again.")}
         </p>
       ) : (
         <>
@@ -147,8 +153,11 @@ export default function Dashboard() {
                 title="Ideas in progress"
                 hint={
                   overview.pipeline.developed > 0
-                    ? `${overview.pipeline.developed} developed · ${overview.pipeline.captured} waiting`
-                    : "Nothing developed yet — start with one idea"
+                    ? t("{developed} developed · {waiting} waiting", {
+                        developed: overview.pipeline.developed,
+                        waiting: overview.pipeline.captured,
+                      })
+                    : t("Nothing developed yet — start with one idea")
                 }
                 action={
                   <Button
@@ -158,15 +167,15 @@ export default function Dashboard() {
                     className="gap-1.5"
                     onClick={() => navigate("/dashboard/ideas")}
                   >
-                    All ideas
-                    <ArrowRight className="size-3.5" />
+                    {t("All ideas")}
+                    <ArrowRight className="size-3.5 rtl:rotate-180" />
                   </Button>
                 }
               />
 
               {overview.recentIdeas.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No ideas yet. Write one above — it takes ten seconds.
+                  {t("No ideas yet. Write one above — it takes ten seconds.")}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
@@ -178,7 +187,7 @@ export default function Dashboard() {
                       <button
                         type="button"
                         onClick={() => openIdea(idea._id)}
-                        className="flex flex-col gap-1 text-left"
+                        className="flex flex-col gap-1 text-start"
                       >
                         <span className="flex flex-wrap items-center gap-2">
                           <StatusPill {...ideaStatusMeta(idea.status)} dot />
@@ -212,7 +221,7 @@ export default function Dashboard() {
                           ) : (
                             <Sparkles className="size-3.5" />
                           )}
-                          {idea.title ? "Re-develop" : "Develop"}
+                          {t(idea.title ? "Re-develop" : "Develop")}
                         </Button>
                         <Button
                           type="button"
@@ -226,7 +235,7 @@ export default function Dashboard() {
                           ) : (
                             <FileText className="size-3.5" />
                           )}
-                          Draft script
+                          {t("Draft script")}
                         </Button>
                       </div>
                     </li>
@@ -247,8 +256,11 @@ export default function Dashboard() {
                 title="Recent drafts"
                 hint={
                   overview.pipeline.scripts > 0
-                    ? `${overview.pipeline.verified} verified · ${overview.pipeline.drafts} in draft`
-                    : "No scripts drafted yet"
+                    ? t("{verified} verified · {drafts} in draft", {
+                        verified: overview.pipeline.verified,
+                        drafts: overview.pipeline.drafts,
+                      })
+                    : t("No scripts drafted yet")
                 }
                 action={
                   <Button
@@ -258,16 +270,17 @@ export default function Dashboard() {
                     className="gap-1.5"
                     onClick={() => navigate("/dashboard/scripts")}
                   >
-                    All scripts
-                    <ArrowRight className="size-3.5" />
+                    {t("All scripts")}
+                    <ArrowRight className="size-3.5 rtl:rotate-180" />
                   </Button>
                 }
               />
 
               {overview.recentScripts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  Drafts land here with real word counts and a duration estimate
-                  based on your pacing.
+                  {t(
+                    "Drafts land here with real word counts and a duration estimate based on your pacing.",
+                  )}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-2">
@@ -288,12 +301,14 @@ export default function Dashboard() {
                           {script.title}
                         </span>
                         <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          <span>{script.wordCount} words</span>
+                          <span>{t("{n} words", { n: script.wordCount })}</span>
                           <span>
-                            {formatDuration(script.estSeconds)} narration
+                            {formatDuration(script.estSeconds)}{" "}
+                            {t("narration")}
                           </span>
                           <span>
-                            {script.writtenCount}/{script.sectionCount} sections
+                            {script.writtenCount}/{script.sectionCount}{" "}
+                            {t("sections")}
                           </span>
                         </span>
                         <Progress
@@ -323,7 +338,9 @@ export default function Dashboard() {
               <SectionHeader
                 icon={Fingerprint}
                 title="Creator style profile"
-                hint="Injected into every model call — the single biggest quality lever."
+                hint={t(
+                  "Injected into every model call — the single biggest quality lever.",
+                )}
               />
               {overview.profile ? (
                 <>
@@ -344,29 +361,30 @@ export default function Dashboard() {
                       tone="neutral"
                     />
                     <StatusPill
-                      label={`${overview.profile.pacing} pacing`}
+                      label={t("{pacing} pacing", { pacing: overview.profile.pacing })}
                       tone="info"
                     />
                     <StatusPill
-                      label={`${overview.profile.targetLengthMin} min target`}
+                      label={t("{n} min target", { n: overview.profile.targetLengthMin })}
                       tone="neutral"
                     />
                   </div>
                   {overview.profile.completeness.missing.length > 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      Missing:{" "}
-                      {overview.profile.completeness.missing.join(", ")}
+                      {t("Missing")}:{" "}
+                      {overview.profile.completeness.missing.join("، ")}
                     </p>
                   ) : (
                     <p className="text-xs text-success">
-                      Profile complete — every field is set.
+                      {t("Profile complete — every field is set.")}
                     </p>
                   )}
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Not set up yet. Without it, drafts use a neutral voice instead
-                  of yours.
+                  {t(
+                    "Not set up yet. Without it, drafts use a neutral voice instead of yours.",
+                  )}
                 </p>
               )}
               <Button
@@ -377,7 +395,7 @@ export default function Dashboard() {
                 onClick={() => navigate("/dashboard/style")}
               >
                 <Fingerprint className="size-4" />
-                {overview.profile ? "Edit profile" : "Set up profile"}
+                {t(overview.profile ? "Edit profile" : "Set up profile")}
               </Button>
             </motion.section>
 
@@ -391,7 +409,7 @@ export default function Dashboard() {
               <SectionHeader
                 icon={Sparkles}
                 title="Agent activity"
-                hint="Every model call, with the provider that answered."
+                hint={t("Every model call, with the provider that answered.")}
                 action={
                   overview.inFlightRuns > 0 ? (
                     <StatusPill label="Running" tone="info" dot />
@@ -400,15 +418,16 @@ export default function Dashboard() {
               />
               {overview.recentRuns.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No model calls yet. Developing an idea will show up here with
-                  model, latency and token usage.
+                  {t(
+                    "No model calls yet. Developing an idea will show up here with model, latency and token usage.",
+                  )}
                 </p>
               ) : (
                 <ul className="flex flex-col gap-4">
                   {overview.recentRuns.slice(0, 2).map((run) => (
                     <li key={run._id} className="flex flex-col gap-2">
                       <span className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-                        {runKindLabel(run.kind)}
+                        {t(runKindLabel(run.kind))}
                       </span>
                       <RunTrace run={run} />
                     </li>
